@@ -1,0 +1,19 @@
+# Dependencies
+venv/
+
+# Environment variables
+.env
+.env.*
+
+# Build outputs
+dist/
+build/
+
+# Django
+__pycache__/
+*.pyc
+db.sqlite3
+
+# IDE
+.vscode/
+.idea/
