@@ -84,7 +84,16 @@ class RegisterSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ("id", "username", "email", "is_verified", "image")
+        fields = (
+            "id",
+            "username",
+            "email",
+            "is_verified",
+            "image",
+            "mobile",
+            "date_of_birth",
+            "nationality",
+        )
 
 
 class SetNewPasswordSerializer(serializers.Serializer):
@@ -125,7 +134,7 @@ class SetNewPasswordSerializer(serializers.Serializer):
                 {"error": "The reset link is invalid"}, code="authorization"
             )
 
-# Add this new serializer
+
 class VerifyEmailSerializer(serializers.Serializer):
     email = serializers.EmailField()
     code = serializers.CharField(max_length=6)

@@ -4,7 +4,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { getAuth, signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "../../utils/firebase";
+import { auth, googleProvider } from "../utils/firebase";
 
 const AuthContext = createContext();
 

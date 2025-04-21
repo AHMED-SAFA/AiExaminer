@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 import {
   Typography,
   Button,
@@ -16,15 +16,14 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import LogoutIcon from "@mui/icons-material/Logout";
 import EditIcon from "@mui/icons-material/Edit";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import EmailIcon from "@mui/icons-material/Email";
 import { motion } from "framer-motion";
 
-const Home = () => {
-  const { user, token, logout } = useAuth();
+function Profile() {
+  const { user, token } = useAuth();
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +46,7 @@ const Home = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log("Fetched user data:", response.data);
+      console.log("Fetched userData:", response.data);
       setUserData(response.data);
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -56,12 +55,6 @@ const Home = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
-
-  // Get the profile image URL from userData or user object
   const profileImage = userData?.image || user?.image;
   const username = userData?.username || user?.username || "User";
   const email = userData?.email || user?.email || "";
@@ -119,34 +112,6 @@ const Home = () => {
               >
                 Welcome, {username}!
               </Typography>
-              <Box
-                sx={{
-                  position: "absolute",
-                  top: 0,
-                  right: 0,
-                  p: 2,
-                }}
-              >
-                <Button
-                  variant="contained"
-                  color="error"
-                  onClick={handleLogout}
-                  startIcon={<LogoutIcon />}
-                  sx={{
-                    borderRadius: 6,
-                    textTransform: "none",
-                    px: 2,
-                    py: 1,
-                    backgroundColor: "rgba(255,255,255,0.2)",
-                    backdropFilter: "blur(10px)",
-                    "&:hover": {
-                      backgroundColor: "rgba(255,255,255,0.3)",
-                    },
-                  }}
-                >
-                  Logout
-                </Button>
-              </Box>
             </Box>
 
             {/* Profile Section */}
@@ -307,6 +272,6 @@ const Home = () => {
       </Fade>
     </Box>
   );
-};
+}
 
-export default Home;
+export default Profile;

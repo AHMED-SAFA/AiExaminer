@@ -135,6 +135,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -177,4 +179,4 @@ PASSWORD_RESET_TIMEOUT = 600  # 10 minutes in seconds
 
 
 FIREBASE_CREDENTIALS_PATH = BASE_DIR / "credentials" / "firebase-adminsdk.json"
-FRONTEND_URL = "http://localhost:3000"
+FRONTEND_URL = "http://localhost:5173"
