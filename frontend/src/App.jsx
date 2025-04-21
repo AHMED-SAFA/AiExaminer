@@ -9,9 +9,17 @@ import VerifyEmail from "./pages/AuthPages/VerifyEmail";
 import ForgotPassword from "./pages/AuthPages/ForgotPassword";
 import ResetPassword from "./pages/AuthPages/ResetPassword";
 import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 import Profile from "./pages/Profile";
 
 function App() {
+  const LayoutWithNavbar = ({ children }) => (
+    <>
+      <Navbar />
+      {children}
+      <Footer />
+    </>
+  );
   return (
     <Router>
       <AuthProvider>
@@ -19,23 +27,17 @@ function App() {
           <Route
             path="/"
             element={
-              <ProtectedRoute>
-                <>
-                  <Navbar />
-                  <Home />
-                </>
-              </ProtectedRoute>
+              <LayoutWithNavbar>
+                <Home />
+              </LayoutWithNavbar>
             }
           />
           <Route
             path="/profile"
             element={
-              <ProtectedRoute>
-                <>
-                  <Navbar />
-                  <Profile />
-                </>
-              </ProtectedRoute>
+              <LayoutWithNavbar>
+                <Profile />
+              </LayoutWithNavbar>
             }
           />
           <Route

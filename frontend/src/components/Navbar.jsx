@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { styled, useTheme } from "@mui/material/styles";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
@@ -14,9 +15,28 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import LogoutIcon from "@mui/icons-material/Logout";
 import MoreIcon from "@mui/icons-material/MoreVert";
 import Avatar from "@mui/material/Avatar";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import Drawer from "@mui/material/Drawer";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import Divider from "@mui/material/Divider";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
+
+const drawerWidth = 240;
+
+const DrawerHeader = styled("div")(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  padding: theme.spacing(0, 1),
+  ...theme.mixins.toolbar,
+  justifyContent: "flex-end",
+}));
 
 export default function Navbar() {
   const { token, logout } = useAuth();
@@ -24,6 +44,8 @@ export default function Navbar() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = useState(null);
   const [userData, setUserData] = useState(null);
+  const [open, setOpen] = useState(false);
+  const theme = useTheme();
   const menuId = "primary-search-account-menu";
   const mobileMenuId = "primary-search-account-menu-mobile";
   const isMenuOpen = Boolean(anchorEl);
@@ -32,6 +54,7 @@ export default function Navbar() {
   useEffect(() => {
     fetchUserData();
   }, []);
+
   const handleLogout = async () => {
     await logout();
     navigate("/login");
@@ -65,6 +88,14 @@ export default function Navbar() {
 
   const handleMobileMenuOpen = (event) => {
     setMobileMoreAnchorEl(event.currentTarget);
+  };
+
+  const handleDrawerOpen = () => {
+    setOpen(true);
+  };
+
+  const handleDrawerClose = () => {
+    setOpen(false);
   };
 
   const renderMenu = (
@@ -145,14 +176,19 @@ export default function Navbar() {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static" sx={{ backgroundColor: "black" }}>
+      <AppBar position="static" sx={{ backgroundColor: "black", py: 1.5 }}>
         <Toolbar>
           <IconButton
             size="large"
             color="inherit"
             edge="start"
             aria-label="open drawer"
-            sx={{ p: 3, my: 1 }}
+            onClick={handleDrawerOpen}
+            sx={{
+              p: 3,
+              my: 1,
+              display: { xs: "flex", md: "none" }, // Only show on mobile
+            }}
           >
             <MenuIcon />
           </IconButton>
@@ -227,6 +263,92 @@ export default function Navbar() {
           </Box>
         </Toolbar>
       </AppBar>
+
+      <Drawer
+        sx={{
+          width: drawerWidth,
+          flexShrink: 0,
+          "& .MuiDrawer-paper": {
+            width: drawerWidth,
+            boxSizing: "border-box",
+          },
+          display: { xs: "block", md: "none" },
+        }}
+        variant="temporary"
+        anchor="left"
+        open={open}
+        onClose={handleDrawerClose}
+      >
+        <DrawerHeader>
+          <Typography
+            variant="h6"
+            noWrap
+            onClick={handleDrawerClose}
+            component="div"
+            sx={{ flexGrow: 1, textAlign: "center", fontWeight: 700 }}
+          >
+            AiExam
+          </Typography>
+          <IconButton onClick={handleDrawerClose}>
+            {theme.direction === "ltr" ? (
+              <ChevronLeftIcon />
+            ) : (
+              <ChevronRightIcon />
+            )}
+          </IconButton>
+        </DrawerHeader>
+        <Divider
+          sx={{
+            my: 1,
+            backgroundColor: "rgba(9, 9, 9, 0.4)",
+          }}
+        />
+        <List>
+          <ListItem disablePadding>
+            <ListItemButton component={Link} to="/profile">
+              <ListItemText primary="Profile" />
+              <ListItemIcon>
+                {userData?.image ? (
+                  <Avatar
+                    src={userData.image}
+                    alt="Profile"
+                    sx={{ width: 24, height: 24 }}
+                  />
+                ) : (
+                  <AccountCircle />
+                )}
+              </ListItemIcon>
+            </ListItemButton>
+          </ListItem>
+          <Divider
+            sx={{
+              my: 1,
+              backgroundColor: "rgba(9, 9, 9, 0.4)",
+            }}
+          />
+          <ListItem disablePadding>
+            <ListItemButton>
+              <ListItemText primary="Messages" />
+              <ListItemIcon>
+                <Badge badgeContent={4} color="error">
+                  <MailIcon />
+                </Badge>
+              </ListItemIcon>
+            </ListItemButton>
+          </ListItem>
+          <ListItem disablePadding>
+            <ListItemButton>
+              <ListItemText primary="Notifications" />
+              <ListItemIcon>
+                <Badge badgeContent={17} color="error">
+                  <NotificationsIcon />
+                </Badge>
+              </ListItemIcon>
+            </ListItemButton>
+          </ListItem>
+        </List>
+      </Drawer>
+
       {renderMobileMenu}
       {renderMenu}
     </Box>

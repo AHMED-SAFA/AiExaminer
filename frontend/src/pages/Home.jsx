@@ -29,14 +29,8 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
-      console.log("No user found");
-      navigate("/login");
-    } else {
-      console.log("User found:", user);
-      fetchUserData();
-    }
-  }, [user, navigate]);
+    fetchUserData();
+  }, []);
 
   const fetchUserData = async () => {
     try {
@@ -55,11 +49,6 @@ const Home = () => {
     }
   };
 
-  const profileImage = userData?.image || user?.image;
-  const username = userData?.username || user?.username || "User";
-  const email = userData?.email || user?.email || "";
-  const isVerified = userData?.is_verified || user?.is_verified;
-
   return (
     <Box
       sx={{
@@ -75,201 +64,37 @@ const Home = () => {
       component={motion.div}
       transition={{ duration: 0.6 }}
     >
-      <Fade in={!loading} timeout={500}>
-        <Box sx={{ mt: 6, mb: 6 }}>
-          <Paper
-            elevation={12}
-            sx={{
-              borderRadius: 3,
-              overflow: "hidden",
-              background: "linear-gradient(to right bottom, #ffffff,)",
-              boxShadow: "0 10px 40px rgba(0, 0, 0, 0.1)",
-            }}
-          >
-            {/* Header Banner */}
-            <Box
-              sx={{
-                height: 160,
-                backgroundColor: "#293f61",
-                position: "relative",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "flex-end",
-                p: 3,
-              }}
-            >
-              <Typography
-                variant="h4"
-                component="h1"
-                mb={4}
-                align="center"
-                color="white"
-                sx={{
-                  color: "white",
-                  fontWeight: 700,
-                  textShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                }}
-              >
-                Welcome, {username}!
-              </Typography>
-            </Box>
-
-            {/* Profile Section */}
-            <Box sx={{ position: "relative", px: 3, pt: 8, pb: 4 }}>
-              <Avatar
-                src={profileImage}
-                alt={`${username}'s profile`}
-                sx={{
-                  width: 120,
-                  height: 120,
-                  border: "4px solid white",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                  position: "absolute",
-                  top: -60,
-                  left: 40,
-                }}
-              >
-                {!profileImage && <AccountCircleIcon sx={{ fontSize: 80 }} />}
-              </Avatar>
-
-              <Box sx={{ ml: { xs: 0, sm: 18 }, mt: { xs: 6, sm: 0 } }}>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                  <Typography
-                    variant="h5"
-                    component="h2"
-                    sx={{ fontWeight: 600, mr: 2 }}
-                  >
-                    {username}
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    sx={{
-                      backgroundColor: "#f0f2ff",
-                      "&:hover": { backgroundColor: "#e0e4ff" },
-                    }}
-                  >
-                    <EditIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    mb: 2,
-                    color: "text.secondary",
-                  }}
-                >
-                  <EmailIcon fontSize="small" sx={{ mr: 1 }} />
-                  <Typography variant="body1">{email}</Typography>
-                </Box>
-
-                <Chip
-                  icon={<VerifiedIcon />}
-                  label={"Email Verified"}
-                  color={"success"}
-                  variant={"filled"}
-                  sx={{ fontWeight: 500, mt: 1 }}
-                />
-
-                {!isVerified && (
-                  <Button
-                    variant="text"
-                    color="primary"
-                    onClick={() => navigate("/verify-email")}
-                    sx={{ ml: 2, textTransform: "none", fontWeight: 500 }}
-                  >
-                    Verify Now
-                  </Button>
-                )}
-              </Box>
-            </Box>
-
-            <Divider sx={{ mx: 3 }} />
-
-            {/* Dashboard Cards */}
-            <Box sx={{ p: 3 }}>
-              <Typography
-                variant="h6"
-                sx={{ mb: 2, fontWeight: 600, color: "text.secondary" }}
-              >
-                Account Overview
-              </Typography>
-
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-                <Card
-                  sx={{
-                    flexGrow: 1,
-                    minWidth: { xs: "100%", sm: "240px" },
-                    borderRadius: 2,
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-                  }}
-                >
-                  <CardContent>
-                    <Typography
-                      variant="subtitle2"
-                      color="text.secondary"
-                      gutterBottom
-                    >
-                      Membership Status
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      {isVerified ? "Active" : "Pending Verification"}
-                    </Typography>
-                  </CardContent>
-                </Card>
-
-                <Card
-                  sx={{
-                    flexGrow: 1,
-                    minWidth: { xs: "100%", sm: "240px" },
-                    borderRadius: 2,
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-                  }}
-                >
-                  <CardContent>
-                    <Typography
-                      variant="subtitle2"
-                      color="text.secondary"
-                      gutterBottom
-                    >
-                      Account Type
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      Standard
-                    </Typography>
-                  </CardContent>
-                </Card>
-
-                <Card
-                  sx={{
-                    flexGrow: 1,
-                    minWidth: { xs: "100%", sm: "240px" },
-                    borderRadius: 2,
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-                  }}
-                >
-                  <CardContent>
-                    <Typography
-                      variant="subtitle2"
-                      color="text.secondary"
-                      gutterBottom
-                    >
-                      Member Since
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      {new Date().toLocaleDateString("en-US", {
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Box>
-            </Box>
-          </Paper>
-        </Box>
-      </Fade>
+      <Box
+        onClick={() => navigate("/create/exam")}
+        component={Paper}
+        elevation={3}
+        cursor="pointer"
+        hoverElevation={6}
+        sx={{
+          width: "100%",
+          maxWidth: 600,
+          padding: 4,
+          borderRadius: 2,
+          background: "rgba(0, 0, 0, 0.37)",
+          backdropFilter: "blur(10px)",
+          hover: {
+            background: "rgba(0, 0, 0, 0.5)",
+            backdropFilter: "blur(10px)",
+            cursor: "pointer",
+            shadow: "0px 4px 20px rgba(0, 0, 0, 0.5)",
+          },
+        }}
+        transition={{ duration: 0.6 }}
+      >
+        <Typography
+          variant="h4"
+          align="center"
+          gutterBottom
+          sx={{ color: "white", fontWeight: "bold" }}
+        >
+          Make Exam
+        </Typography>
+      </Box>
     </Box>
   );
 };
