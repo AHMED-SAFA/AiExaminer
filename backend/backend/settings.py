@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "django_rest_passwordreset",
     # Local
     "auth_app",
+    "profile_app"
 ]
 
 MIDDLEWARE = [

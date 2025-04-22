@@ -8,6 +8,9 @@ from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from .models import VerificationCode
+from django.core.validators import RegexValidator
+from datetime import date
+from django.utils.translation import gettext_lazy as _
 
 
 User = get_user_model()
@@ -82,6 +85,36 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    mobile = serializers.CharField(
+        validators=[
+            RegexValidator(
+                regex=r"^\+?1?\d{9,15}$",
+                message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.",
+            )
+        ],
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+    )
+
+    date_of_birth = serializers.DateField(required=False)
+
+    nationality = serializers.CharField(
+        max_length=100,
+        required=False,
+        validators=[
+            RegexValidator(
+                regex=r"^[A-Za-z\s-]+$",
+                message="Nationality must contain only letters, spaces, and hyphens.",
+            )
+        ],
+    )
+
+    def validate_date_of_birth(self, value):
+        if value and value > date.today():
+            raise serializers.ValidationError("Date of birth cannot be in the future.")
+        return value
+
     class Meta:
         model = User
         fields = (
@@ -93,7 +126,10 @@ class UserSerializer(serializers.ModelSerializer):
             "mobile",
             "date_of_birth",
             "nationality",
+            "date_joined",
         )
+        read_only_fields = ("id", "is_verified", "email")
+        # add velidator for mobile, dob,nationality
 
 
 class SetNewPasswordSerializer(serializers.Serializer):

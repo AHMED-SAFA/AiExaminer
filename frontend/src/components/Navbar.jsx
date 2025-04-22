@@ -1,29 +1,33 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
-import { styled, useTheme } from "@mui/material/styles";
-import AppBar from "@mui/material/AppBar";
-import Box from "@mui/material/Box";
-import Toolbar from "@mui/material/Toolbar";
-import IconButton from "@mui/material/IconButton";
-import Typography from "@mui/material/Typography";
-import Badge from "@mui/material/Badge";
-import MenuItem from "@mui/material/MenuItem";
-import Menu from "@mui/material/Menu";
+import {
+  styled,
+  useTheme,
+  Box,
+  Menu,
+  MenuItem,
+  Avatar,
+  AppBar,
+  Toolbar,
+  IconButton,
+  Typography,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  ListItemIcon,
+  Divider,
+  Badge,
+} from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import AccountCircle from "@mui/icons-material/AccountCircle";
 import MailIcon from "@mui/icons-material/Mail";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import LogoutIcon from "@mui/icons-material/Logout";
 import MoreIcon from "@mui/icons-material/MoreVert";
-import Avatar from "@mui/material/Avatar";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import Drawer from "@mui/material/Drawer";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import ListItemButton from "@mui/material/ListItemButton";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
-import Divider from "@mui/material/Divider";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
@@ -59,6 +63,7 @@ export default function Navbar() {
     await logout();
     navigate("/login");
   };
+
   const fetchUserData = async () => {
     try {
       const response = await axios.get("http://127.0.0.1:8000/api/auth/user/", {
@@ -66,7 +71,6 @@ export default function Navbar() {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log("User data from navbar:", response.data);
       setUserData(response.data);
     } catch (error) {
       console.error("Error fetching user data from navbar:", error);
@@ -77,13 +81,9 @@ export default function Navbar() {
     setAnchorEl(event.currentTarget);
   };
 
-  const handleMobileMenuClose = () => {
-    setMobileMoreAnchorEl(null);
-  };
-
   const handleMenuClose = () => {
     setAnchorEl(null);
-    handleMobileMenuClose();
+    setMobileMoreAnchorEl(null);
   };
 
   const handleMobileMenuOpen = (event) => {
@@ -98,7 +98,7 @@ export default function Navbar() {
     setOpen(false);
   };
 
-  const renderMenu = (
+  const renderAccountMenu = (
     <Menu
       anchorEl={anchorEl}
       anchorOrigin={{
@@ -114,31 +114,7 @@ export default function Navbar() {
       open={isMenuOpen}
       onClose={handleMenuClose}
     >
-      <MenuItem onClick={handleMenuClose}>
-        <Link to={"/profile"}>Profile</Link>
-      </MenuItem>
-      <MenuItem onClick={handleLogout}>Logout</MenuItem>
-    </Menu>
-  );
-
-  const renderMobileMenu = (
-    <Menu
-      anchorEl={mobileMoreAnchorEl}
-      anchorOrigin={{
-        vertical: "top",
-        horizontal: "right",
-      }}
-      id={mobileMenuId}
-      keepMounted
-      transformOrigin={{
-        vertical: "top",
-        horizontal: "right",
-      }}
-      open={isMobileMenuOpen}
-      onClose={handleMobileMenuClose}
-    >
-      {/* profile menu */}
-      <MenuItem>
+      <MenuItem onClick={handleMenuClose} component={Link} to="/profile">
         <IconButton
           size="large"
           aria-label="account of current user"
@@ -158,7 +134,6 @@ export default function Navbar() {
         </IconButton>
         <p>Profile</p>
       </MenuItem>
-      {/* logout menu */}
       <MenuItem onClick={handleLogout}>
         <IconButton
           size="large"
@@ -167,6 +142,51 @@ export default function Navbar() {
           aria-haspopup="true"
           color="inherit"
         >
+          <LogoutIcon />
+        </IconButton>
+        Logout
+      </MenuItem>
+    </Menu>
+  );
+
+  const mobileMenu = (
+    <Menu
+      anchorEl={mobileMoreAnchorEl}
+      anchorOrigin={{
+        vertical: "top",
+        horizontal: "right",
+      }}
+      id={mobileMenuId}
+      keepMounted
+      transformOrigin={{
+        vertical: "top",
+        horizontal: "right",
+      }}
+      open={isMobileMenuOpen}
+      onClose={handleMenuClose}
+    >
+      <MenuItem onClick={handleProfileMenuOpen}>
+        <IconButton
+          size="large"
+          aria-label="account of current user"
+          aria-controls="primary-search-account-menu"
+          aria-haspopup="true"
+          color="inherit"
+        >
+          {userData?.image ? (
+            <Avatar
+              src={userData.image}
+              alt="Profile"
+              sx={{ width: 24, height: 24 }}
+            />
+          ) : (
+            <AccountCircle />
+          )}
+        </IconButton>
+        <p>Profile</p>
+      </MenuItem>
+      <MenuItem onClick={handleLogout}>
+        <IconButton size="large" aria-label="logout" color="inherit">
           <LogoutIcon />
         </IconButton>
         <p>Logout</p>
@@ -187,7 +207,7 @@ export default function Navbar() {
             sx={{
               p: 3,
               my: 1,
-              display: { xs: "flex", md: "none" }, // Only show on mobile
+              display: { xs: "flex", md: "none" },
             }}
           >
             <MenuIcon />
@@ -210,7 +230,96 @@ export default function Navbar() {
           </Typography>
 
           <Box sx={{ flexGrow: 1 }} />
-          <Box sx={{ display: { xs: "none", md: "flex" } }}>
+
+          {/* Desktop Navigation */}
+          <Box
+            sx={{
+              display: { xs: "none", md: "flex" },
+              alignItems: "center",
+              gap: 3,
+            }}
+          >
+            <Typography
+              variant="body2"
+              component="span"
+              sx={{
+                fontWeight: 500,
+                backgroundColor: "indigo",
+                cursor: "pointer",
+                px: 2,
+                py: 1,
+                borderRadius: 1,
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "darkblue",
+                },
+                transition: "background-color 0.3s ease",
+              }}
+            >
+              <Link to="/create-exam" style={{ textDecoration: "none" }}>
+                <Typography
+                  variant="body2"
+                  component="span"
+                  sx={{ fontWeight: 600, color: "white" }}
+                >
+                  Create Exam
+                </Typography>
+              </Link>
+            </Typography>
+            <Typography
+              variant="body2"
+              component="span"
+              sx={{
+                fontWeight: 500,
+                backgroundColor: "indigo",
+                cursor: "pointer",
+                px: 2,
+                py: 1,
+                borderRadius: 1,
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "darkblue",
+                },
+                transition: "background-color 0.3s ease",
+              }}
+            >
+              <Link to="/previous-exams" style={{ textDecoration: "none" }}>
+                <Typography
+                  variant="body2"
+                  component="span"
+                  sx={{ fontWeight: 600, color: "white" }}
+                >
+                  Previous Exams
+                </Typography>
+              </Link>
+            </Typography>
+            <Typography
+              variant="body2"
+              component="span"
+              sx={{
+                fontWeight: 500,
+                backgroundColor: "indigo",
+                cursor: "pointer",
+                px: 2,
+                py: 1,
+                borderRadius: 1,
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "darkblue",
+                },
+                transition: "background-color 0.3s ease",
+              }}
+            >
+              <Link to="/statistics" style={{ textDecoration: "none" }}>
+                <Typography
+                  variant="body2"
+                  component="span"
+                  sx={{ fontWeight: 600, color: "white" }}
+                >
+                  Statistics
+                </Typography>
+              </Link>
+            </Typography>
             <IconButton
               size="large"
               aria-label="show 4 new mails"
@@ -249,6 +358,8 @@ export default function Navbar() {
               )}
             </IconButton>
           </Box>
+
+          {/* Mobile More Icon */}
           <Box sx={{ display: { xs: "flex", md: "none" } }}>
             <IconButton
               size="large"
@@ -264,6 +375,7 @@ export default function Navbar() {
         </Toolbar>
       </AppBar>
 
+      {/* Mobile Drawer */}
       <Drawer
         sx={{
           width: drawerWidth,
@@ -283,7 +395,6 @@ export default function Navbar() {
           <Typography
             variant="h6"
             noWrap
-            onClick={handleDrawerClose}
             component="div"
             sx={{ flexGrow: 1, textAlign: "center", fontWeight: 700 }}
           >
@@ -297,15 +408,50 @@ export default function Navbar() {
             )}
           </IconButton>
         </DrawerHeader>
-        <Divider
-          sx={{
-            my: 1,
-            backgroundColor: "rgba(9, 9, 9, 0.4)",
-          }}
-        />
+
+        <Divider sx={{ my: 1, backgroundColor: "rgba(9, 9, 9, 0.4)" }} />
+
         <List>
+          {/* Navigation Items */}
           <ListItem disablePadding>
-            <ListItemButton component={Link} to="/profile">
+            <ListItemButton
+              component={Link}
+              to="/create-exam"
+              onClick={handleDrawerClose}
+            >
+              <ListItemText primary="Create Exam" />
+            </ListItemButton>
+          </ListItem>
+
+          <ListItem disablePadding>
+            <ListItemButton
+              component={Link}
+              to="/previous-exams"
+              onClick={handleDrawerClose}
+            >
+              <ListItemText primary="Previous Exams" />
+            </ListItemButton>
+          </ListItem>
+
+          <ListItem disablePadding>
+            <ListItemButton
+              component={Link}
+              to="/statistics"
+              onClick={handleDrawerClose}
+            >
+              <ListItemText primary="Statistics" />
+            </ListItemButton>
+          </ListItem>
+
+          <Divider sx={{ my: 1, backgroundColor: "rgba(9, 9, 9, 0.4)" }} />
+
+          {/* Profile */}
+          <ListItem disablePadding>
+            <ListItemButton
+              component={Link}
+              to="/profile"
+              onClick={handleDrawerClose}
+            >
               <ListItemText primary="Profile" />
               <ListItemIcon>
                 {userData?.image ? (
@@ -320,14 +466,10 @@ export default function Navbar() {
               </ListItemIcon>
             </ListItemButton>
           </ListItem>
-          <Divider
-            sx={{
-              my: 1,
-              backgroundColor: "rgba(9, 9, 9, 0.4)",
-            }}
-          />
+
+          {/* Messages */}
           <ListItem disablePadding>
-            <ListItemButton>
+            <ListItemButton onClick={handleDrawerClose}>
               <ListItemText primary="Messages" />
               <ListItemIcon>
                 <Badge badgeContent={4} color="error">
@@ -336,8 +478,10 @@ export default function Navbar() {
               </ListItemIcon>
             </ListItemButton>
           </ListItem>
+
+          {/* Notifications */}
           <ListItem disablePadding>
-            <ListItemButton>
+            <ListItemButton onClick={handleDrawerClose}>
               <ListItemText primary="Notifications" />
               <ListItemIcon>
                 <Badge badgeContent={17} color="error">
@@ -346,11 +490,21 @@ export default function Navbar() {
               </ListItemIcon>
             </ListItemButton>
           </ListItem>
+
+          {/* Logout */}
+          <ListItem disablePadding>
+            <ListItemButton onClick={handleLogout}>
+              <ListItemText primary="Logout" />
+              <ListItemIcon>
+                <LogoutIcon />
+              </ListItemIcon>
+            </ListItemButton>
+          </ListItem>
         </List>
       </Drawer>
 
-      {renderMobileMenu}
-      {renderMenu}
+      {mobileMenu}
+      {renderAccountMenu}
     </Box>
   );
 }

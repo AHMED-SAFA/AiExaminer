@@ -434,15 +434,4 @@ class UserProfileView(APIView):
 
         return Response(data, status=status.HTTP_200_OK)
 
-    def patch(self, request):
-        serializer = UserSerializer(request.user, data=request.data, partial=True)
-        if serializer.is_valid():
-            user = serializer.save()
-            data = serializer.data
-
-            # Add full URL for image
-            if user.image:
-                data["image"] = request.build_absolute_uri(user.image.url)
-
-            return Response(data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
