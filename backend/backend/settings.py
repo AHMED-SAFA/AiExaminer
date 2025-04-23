@@ -3,10 +3,12 @@ import os
 from datetime import timedelta
 from dotenv import load_dotenv
 
+__all__ = ("celery_app",)
+
+
 # Load environment variables from .env file
 load_dotenv()
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -40,7 +42,8 @@ INSTALLED_APPS = [
     "django_rest_passwordreset",
     # Local
     "auth_app",
-    "profile_app"
+    "profile_app",
+    "create_exam_app",
 ]
 
 MIDDLEWARE = [

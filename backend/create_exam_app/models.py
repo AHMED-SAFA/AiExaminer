@@ -1,0 +1,111 @@
+from django.db import models
+import uuid
+import os
+from django.conf import settings
+from django.utils import timezone
+from auth_app.models import User
+
+
+def pdf_upload_path(instance, filename):
+    """Generate a unique path for uploaded PDF files"""
+    # Get the original filename without extension
+    original_name = os.path.splitext(filename)[0]
+    # Get the extension
+    ext = filename.split(".")[-1]
+    # Clean the exam title by replacing spaces with underscores and removing special characters
+    clean_title = ''.join(e for e in instance.title if e.isalnum() or e == ' ').replace(' ', '_')
+    # Generate new filename with original name, exam title and uuid
+    filename = f"{original_name}_{clean_title}_{uuid.uuid4()}.{ext}"
+    return os.path.join("exam_pdfs", filename)
+
+
+class Exam(models.Model):
+    """Model for exam metadata and configuration"""
+
+    title = models.CharField(max_length=255)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="exams",verbose_name="Exam Creator")
+    pdf_file = models.FileField(upload_to=pdf_upload_path)
+    duration = models.IntegerField(help_text="Duration in minutes")
+    total_marks = models.IntegerField(default=100)
+    minus_marking = models.BooleanField(default=False)
+    minus_marking_value = models.FloatField(default=0.25)
+    mcq_options_count = models.IntegerField(default=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_processed = models.BooleanField(default=False)
+    processing_status = models.CharField(
+        max_length=20,
+        default="pending",
+        choices=[
+            ("pending", "Pending"),
+            ("processing", "Processing"),
+            ("completed", "Completed"),
+            ("failed", "Failed"),
+        ],
+    )
+
+    def __str__(self):
+        return f"Exam:{self.title} created by {self.created_by}"
+
+
+class Question(models.Model):
+    """Model for MCQ questions generated from exam documents"""
+
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name="questions")
+    question_text = models.TextField()
+    marks = models.IntegerField(default=1)
+    explanation = models.TextField(blank=True, null=True)
+    from_pdf = models.BooleanField(
+        default=True
+    ) 
+
+    def __str__(self):
+        return f"{self.question_text[:50]} for {self.exam}"
+
+
+class Option(models.Model):
+    """Model for MCQ answer options"""
+
+    question = models.ForeignKey(
+        Question, on_delete=models.CASCADE, related_name="options"
+    )
+    option_text = models.TextField()
+    is_correct = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.option_text[:30]} for {self.question}"
+
+
+class ExamSession(models.Model):
+    """Model for tracking user's exam attempt"""
+
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name="sessions")
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="exam_sessions"
+    )
+    start_time = models.DateTimeField(auto_now_add=True)
+    end_time = models.DateTimeField(null=True, blank=True)
+    is_completed = models.BooleanField(default=False)
+    score = models.FloatField(null=True, blank=True)
+
+    def __str__(self):
+        return f"User:{self.user.username} - exam title:{self.exam.title}"
+
+
+class UserAnswer(models.Model):
+    """Model for storing user's answers during exam"""
+
+    session = models.ForeignKey(
+        ExamSession, on_delete=models.CASCADE, related_name="answers"
+    )
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    selected_option = models.ForeignKey(
+        Option, on_delete=models.CASCADE, null=True, blank=True
+    )
+    is_correct = models.BooleanField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ("session", "question")
+
+    def __str__(self):
+        return f"{self.session.user.username} - Question:{self.question.id}"

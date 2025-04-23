@@ -13,39 +13,106 @@ import {
   IconButton,
   Fade,
   Chip,
+  Grid,
+  CircularProgress,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import EditIcon from "@mui/icons-material/Edit";
-import VerifiedIcon from "@mui/icons-material/Verified";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import EmailIcon from "@mui/icons-material/Email";
+import CreateExamModal from "./CreateExamPage/CreateExamModal";
 import { motion } from "framer-motion";
+import AddIcon from "@mui/icons-material/Add";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import GradeIcon from "@mui/icons-material/Grade";
+import RefreshIcon from "@mui/icons-material/Refresh";
 
 const Home = () => {
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   const navigate = useNavigate();
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [exams, setExams] = useState([]);
+  const [examLoading, setExamLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleModalOpen = () => {
+    setModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setError(null);
+  };
 
   useEffect(() => {
-    fetchUserData();
+    fetchExams();
   }, []);
 
-  const fetchUserData = async () => {
+  const fetchExams = async () => {
     try {
-      setLoading(true);
-      const response = await axios.get("http://127.0.0.1:8000/api/auth/user/", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      console.log("Fetched userData:", response.data);
-      setUserData(response.data);
+      setExamLoading(true);
+      const response = await axios.get(
+        "http://127.0.0.1:8000/api/exam/exams/",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setExams(response.data);
     } catch (error) {
-      console.error("Error fetching user data:", error);
+      console.error("Error fetching exams:", error);
     } finally {
-      setLoading(false);
+      setExamLoading(false);
+    }
+  };
+
+  const handleExamSubmit = async (formData) => {
+    try {
+      const response = await axios.post(
+        "http://127.0.0.1:8000/api/exam/exams/",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      console.log("Exam created:", response.data);
+      handleModalClose(); // Close modal after successful creation
+      await fetchExams(); // Fetch updated exam list
+    } catch (error) {
+      console.error("Error creating exam:", error);
+      // Show user-friendly error message
+      let errorMessage = "Failed to create exam. Please try again.";
+      if (error.response?.data?.error) {
+        if (error.response.data.error.includes("insufficient_quota")) {
+          errorMessage =
+            "OpenAI API quota exceeded. Please try again later or contact support.";
+        } else {
+          errorMessage = error.response.data.error;
+        }
+      }
+      setError(errorMessage);
+    }
+  };
+
+  const handleExamClick = (examId) => {
+    navigate(`/exam/${examId}`);
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "pending":
+        return "warning";
+      case "processing":
+        return "info";
+      case "completed":
+        return "success";
+      case "failed":
+        return "error";
+      default:
+        return "default";
     }
   };
 
@@ -54,47 +121,143 @@ const Home = () => {
       sx={{
         minHeight: "100vh",
         background:
-          "linear-gradient(135deg,rgb(14, 26, 78) 0%,rgb(183, 132, 235) 100%)",
+          "linear-gradient(135deg, rgb(14, 26, 78) 0%, rgb(183, 132, 235) 100%)",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 2,
+        flexDirection: "column",
+        padding: 4,
         overflow: "hidden",
       }}
       component={motion.div}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.6 }}
     >
       <Box
-        onClick={() => navigate("/create/exam")}
-        component={Paper}
-        elevation={3}
-        cursor="pointer"
-        hoverElevation={6}
         sx={{
-          width: "100%",
-          maxWidth: 600,
-          padding: 4,
-          borderRadius: 2,
-          background: "rgba(0, 0, 0, 0.37)",
-          backdropFilter: "blur(10px)",
-          hover: {
-            background: "rgba(0, 0, 0, 0.5)",
-            backdropFilter: "blur(10px)",
-            cursor: "pointer",
-            shadow: "0px 4px 20px rgba(0, 0, 0, 0.5)",
-          },
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 4,
         }}
-        transition={{ duration: 0.6 }}
       >
-        <Typography
-          variant="h4"
-          align="center"
-          gutterBottom
-          sx={{ color: "white", fontWeight: "bold" }}
-        >
-          Make Exam
+        <Typography variant="h4" sx={{ color: "white", fontWeight: "bold" }}>
+          My Exams Dashboard
         </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleModalOpen}
+          sx={{
+            backgroundColor: "rgba(255, 255, 255, 0.2)",
+            backdropFilter: "blur(10px)",
+            color: "white",
+            "&:hover": {
+              backgroundColor: "rgba(255, 255, 255, 0.3)",
+            },
+          }}
+        >
+          Create New Exam
+        </Button>
       </Box>
+
+      <Paper
+        elevation={3}
+        sx={{
+          flexGrow: 1,
+          padding: 3,
+          borderRadius: 2,
+          background: "rgba(255, 255, 255, 0.9)",
+          backdropFilter: "blur(10px)",
+        }}
+      >
+        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+          <Typography variant="h5" gutterBottom>
+            My Exams
+          </Typography>
+          <Button
+            startIcon={<RefreshIcon />}
+            onClick={fetchExams}
+            disabled={examLoading}
+          >
+            Refresh
+          </Button>
+        </Box>
+
+        {examLoading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : exams.length > 0 ? (
+          <Grid container spacing={3}>
+            {exams.map((exam) => (
+              <Grid item xs={12} sm={6} md={4} key={exam.id}>
+                <Card
+                  sx={{
+                    height: "100%",
+                    cursor: "pointer",
+                    transition: "transform 0.2s",
+                    "&:hover": {
+                      transform: "scale(1.02)",
+                      boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.15)",
+                    },
+                  }}
+                  onClick={() => handleExamClick(exam.id)}
+                >
+                  <CardContent>
+                    <Typography variant="h6" noWrap gutterBottom>
+                      {exam.title}
+                    </Typography>
+
+                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                      <AccessTimeIcon fontSize="small" sx={{ mr: 1 }} />
+                      <Typography variant="body2">
+                        {exam.duration} minutes
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                      <GradeIcon fontSize="small" sx={{ mr: 1 }} />
+                      <Typography variant="body2">
+                        {exam.total_marks} marks
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                      <AssignmentIcon fontSize="small" sx={{ mr: 1 }} />
+                      <Typography variant="body2">
+                        {exam.question_count || 0} questions
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ mt: 2 }}>
+                      <Chip
+                        label={exam.processing_status.toUpperCase()}
+                        color={getStatusColor(exam.processing_status)}
+                        size="small"
+                      />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        ) : (
+          <Box sx={{ textAlign: "center", py: 4 }}>
+            <Typography variant="body1" color="textSecondary">
+              You haven't created any exams yet. Click the "Create New Exam"
+              button to get started.
+            </Typography>
+          </Box>
+        )}
+      </Paper>
+
+      {/* Create Exam Modal */}
+      <CreateExamModal
+        open={modalOpen}
+        handleClose={handleModalClose}
+        handleSubmit={handleExamSubmit}
+        error={error}
+      />
     </Box>
   );
 };

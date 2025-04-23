@@ -1,3 +1,5 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-refresh/only-export-components */
 /* eslint-disable react-hooks/exhaustive-deps */
 import { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
@@ -175,7 +177,6 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (formData) => {
     try {
-      // Check if FormData is being used (for image upload)
       const isFormData = formData instanceof FormData;
 
       // Set up the appropriate content type
@@ -253,40 +254,7 @@ export const AuthProvider = ({ children }) => {
       return false;
     }
   };
-
-  // const updateProfile = async (updateData) => {
-  //   try {
-  //     const isFormData = updateData instanceof FormData;
-
-  //     const config = {
-  //       headers: {
-  //         Authorization: `Bearer ${token}`,
-  //         "Content-Type": isFormData
-  //           ? "multipart/form-data"
-  //           : "application/json",
-  //       },
-  //     };
-
-  //     const response = await axios.patch(
-  //       "http://127.0.0.1:8000/api/auth/profile/",
-  //       updateData,
-  //       config
-  //     );
-
-  //     console.log("Profile update response:", response);
-  //     console.log("Profile update response.data:", response.data);
-  //     setUser(response.data);
-
-  //     return { success: true, data: response.data };
-  //   } catch (error) {
-  //     console.error("Profile update error:", error);
-  //     return {
-  //       success: false,
-  //       error: error.response?.data || "Failed to update profile",
-  //     };
-  //   }
-  // };
-
+  
   useEffect(() => {
     const checkAuth = async () => {
       try {
