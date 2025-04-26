@@ -28,55 +28,58 @@ class QuestionInline(admin.TabularInline):
     readonly_fields = ('from_pdf',)
     show_change_link = True
 
-@admin.register(Exam)
-class ExamAdmin(admin.ModelAdmin):
-    list_display = (
-        'title', 
-        'creator_with_link', 
-        'duration', 
-        'total_marks', 
-        'created_at', 
-        'processing_status',
-        'is_processed'
-    )
-    list_filter = ('is_processed', 'processing_status', 'created_at', 'minus_marking')
-    search_fields = ('title', 'created_by__username')
-    readonly_fields = ('pdf_preview', 'processing_status', 'is_processed')
-    fieldsets = (
-        (None, {
-            'fields': ('title', 'created_by', 'pdf_file', 'pdf_preview')
-        }),
-        ('Configuration', {
-            'fields': (
-                'duration', 
-                'total_marks', 
-                'minus_marking', 
-                'minus_marking_value',
-                'mcq_options_count'
-            )
-        }),
-        ('Status', {
-            'fields': ('is_processed', 'processing_status')
-        }),
-    )
-    inlines = [QuestionInline]
-    list_per_page = 20
+admin.site.register(Exam)
+# @admin.register(Exam)
+# class ExamAdmin(admin.ModelAdmin):
+#     list_display = (
+#         'title', 
+#         'creator_with_link', 
+#         'duration', 
+#         'total_marks', 
+#         'created_at', 
+#         'processing_status',
+#         'is_processed',
+#         "output_pdf ",
+#         "question_count" 
+#     )
+#     list_filter = ('is_processed', 'processing_status', 'created_at', 'minus_marking')
+#     search_fields = ('title', 'created_by__username')
+#     readonly_fields = ('pdf_preview', 'processing_status', 'is_processed')
+#     fieldsets = (
+#         (None, {
+#             'fields': ('title', 'created_by', 'pdf_file', 'pdf_preview')
+#         }),
+#         ('Configuration', {
+#             'fields': (
+#                 'duration', 
+#                 'total_marks', 
+#                 'minus_marking', 
+#                 'minus_marking_value',
+#                 'mcq_options_count'
+#             )
+#         }),
+#         ('Status', {
+#             'fields': ('is_processed', 'processing_status')
+#         }),
+#     )
+#     inlines = [QuestionInline]
+#     list_per_page = 20
     
-    def creator_with_link(self, obj):
-        from django.urls import reverse
-        from django.utils.html import escape
-        url = reverse("admin:auth_app_user_change", args=[obj.created_by.id])
-        return format_html('<a href="{}">{}</a>', url, escape(obj.created_by.username))
-    creator_with_link.short_description = "Created By"
+#     def creator_with_link(self, obj):
+#         from django.urls import reverse
+#         from django.utils.html import escape
+#         url = reverse("admin:auth_app_user_change", args=[obj.created_by.id])
+#         return format_html('<a href="{}">{}</a>', url, escape(obj.created_by.username))
+#     creator_with_link.short_description = "Created By"
     
-    def pdf_preview(self, obj):
-        if obj.pdf_file:
-            return format_html(
-                '<a href="{}" target="_blank">View PDF</a>',
-                obj.pdf_file.url
-            )
-        return "-"
-    pdf_preview.short_description = "PDF Preview"
+#     def pdf_preview(self, obj):
+#         if obj.pdf_file:
+#             return format_html(
+#                 '<a href="{}" target="_blank">View PDF</a>',
+#                 obj.pdf_file.url
+#             )
+#         return "-"
+#     pdf_preview.short_description = "PDF Preview"
 
 class UserAnswerInline(admin.TabularInline):
     model = UserAnswer
