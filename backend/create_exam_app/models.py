@@ -38,7 +38,7 @@ class Exam(models.Model):
         choices=[
             ("pending", "Pending"),
             ("processing", "Processing"),
-            ("completed", "Completed"),
+            ("generated", "Generated"),
             ("failed", "Failed"),
         ],
     )
@@ -61,7 +61,7 @@ class Question(models.Model):
     from_pdf = models.BooleanField(default=True)
     has_options = models.BooleanField(
         default=False
-    )  # Flag if options are already provided
+    ) 
 
     def __str__(self):
         return f"{self.question_text[:50]} for {self.exam}"

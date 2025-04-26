@@ -137,6 +137,7 @@ const CreateExamModal = ({ open, handleClose, handleSubmit }) => {
                 label="Exam Duration (minutes)"
                 onChange={handleInputChange}
               >
+                <MenuItem value={15}>15 minutes</MenuItem>
                 <MenuItem value={30}>30 minutes</MenuItem>
                 <MenuItem value={60}>1 hour</MenuItem>
                 <MenuItem value={90}>1.5 hours</MenuItem>
@@ -186,8 +187,8 @@ const CreateExamModal = ({ open, handleClose, handleSubmit }) => {
             <FormControl fullWidth>
               <InputLabel>Number of MCQ Options</InputLabel>
               <Select
-                name="mcqOptionsCount"
-                value={examData.mcqOptionsCount}
+                name="minmcqOptionsCount"
+                value={examData.minmcqOptionsCount}
                 label="Number of MCQ Options"
                 onChange={handleInputChange}
               >

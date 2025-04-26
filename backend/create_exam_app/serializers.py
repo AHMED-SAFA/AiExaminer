@@ -19,6 +19,8 @@ class ExamCreateSerializer(serializers.ModelSerializer):
             "minus_marking_value",
             "mcq_options_count",
             "created_at",
+            "output_pdf",
+            "question_count" 
         ]
         read_only_fields = ["id", "created_at"]
 
