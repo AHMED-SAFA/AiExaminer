@@ -28,7 +28,9 @@ import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import GradeIcon from "@mui/icons-material/Grade";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
-
+import IsoIcon from "@mui/icons-material/Iso";
+import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 const Home = () => {
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -72,6 +74,7 @@ const Home = () => {
         }
       );
       setExams(response.data);
+      console.log("Fetched exams from home:", response.data);
     } catch (error) {
       console.error("Error fetching exams:", error);
       setSnackbar({
@@ -297,6 +300,25 @@ const Home = () => {
                           "Questions count will be updated after generating questions"}
                       </Typography>
                     </Box>
+
+                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                      <RemoveCircleOutlineIcon
+                        fontSize="small"
+                        sx={{ mr: 1 }}
+                      />
+                      <Typography variant="body2">
+                        Minus Marking: {exam.minus_marking ? "Yes" : "No"}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                      <IsoIcon fontSize="small" sx={{ mr: 1 }} />
+                      <Typography variant="body2">
+                        {exam.minus_marking_value
+                          ? exam.minus_marking_value + " each wrong"
+                          : "No minus marking"}
+                      </Typography>
+                    </Box>
+
                     <Box sx={{ mt: 2 }}>
                       <Chip
                         label={exam.processing_status.toUpperCase()}
@@ -338,6 +360,30 @@ const Home = () => {
                         )}
                       </Button>
                     </Box>
+
+                    {exam.output_pdf && (
+                      <Box sx={{ mt: 2 }}>
+                        <Button
+                          variant="outlined"
+                          component="a"
+                          href={`${exam.output_pdf}`}
+                          target="_blank"
+                          rel="noopener noreferrer" // Security best practice for external links
+                          startIcon={<VisibilityIcon />}
+                          size="small"
+                          onClick={(e) => e.stopPropagation()}
+                          sx={{
+                            color: "primary.main",
+                            borderColor: "primary.main",
+                            "&:hover": {
+                              backgroundColor: "rgba(0, 0, 0, 0.1)",
+                            },
+                          }}
+                        >
+                          View question set
+                        </Button>
+                      </Box>
+                    )}
                   </CardContent>
                 </Card>
               </Grid>

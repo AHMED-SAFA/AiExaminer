@@ -27,7 +27,7 @@ class Exam(models.Model):
     duration = models.IntegerField(help_text="Duration in minutes")
     total_marks = models.IntegerField(default=100)
     minus_marking = models.BooleanField(default=False)
-    minus_marking_value = models.FloatField(default=0.25)
+    minus_marking_value = models.FloatField(default=0, null=True, blank=True)
     mcq_options_count = models.IntegerField(default=2)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

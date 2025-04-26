@@ -27,10 +27,10 @@ const CreateExamModal = ({ open, handleClose, handleSubmit }) => {
   const [examData, setExamData] = useState({
     title: "",
     pdfFile: null,
-    duration: 60, // in minutes
+    duration: 60,
     totalMarks: 50,
     minusMarking: false,
-    minusMarkingValue: 0.25, // default: 0.25 marks deducted for wrong answer
+    minusMarkingValue: "",
     minmcqOptionsCount: 2,
   });
 

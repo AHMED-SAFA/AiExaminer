@@ -57,6 +57,9 @@ class ExamCreateSerializer(serializers.ModelSerializer):
 
     def validate_minus_marking_value(self, value):
         """Validate minus marking value"""
+        if value is None:
+            return value
+
         if value < 0 or value > 1:
             raise serializers.ValidationError(
                 "Minus marking value must be between 0 and 1"
@@ -103,6 +106,7 @@ class ExamDetailSerializer(serializers.ModelSerializer):
             "processing_status",
             "questions",
             "question_count",
+            "output_pdf",
         ]
 
     def get_question_count(self, obj):
