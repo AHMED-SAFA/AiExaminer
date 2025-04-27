@@ -84,7 +84,7 @@ class GenerateAnswerOptionsView(APIView):
             pdf_reader = PyPDF2.PdfReader(pdf_file)
             text = ""
             for page in pdf_reader.pages:
-                text += page.extract_text() or ""  # Handle None returns
+                text += page.extract_text() or ""
 
             if not text.strip():
                 raise ValueError("No readable text found in PDF")
@@ -160,7 +160,8 @@ class GenerateAnswerOptionsView(APIView):
                 ]
             }}
             
-            Include ONLY the JSON in your response, with no additional text, explanations or markdown formatting.
+            Include ONLY the JSON in your response, with no additional text, 
+            explanations or markdown formatting.
             
             Content:
             {content_sample}"""
@@ -192,7 +193,6 @@ class GenerateAnswerOptionsView(APIView):
     def fallback_question_extraction(self, text):
         """Extract questions manually if JSON parsing fails"""
         try:
-            # Look for question patterns like numbered questions or questions with "?"
             questions = []
             # Pattern for numbered questions
             numbered_questions = re.findall(r"\d+\.\s*([^\n]+\?)", text)
@@ -208,6 +208,7 @@ class GenerateAnswerOptionsView(APIView):
             print(f"Fallback extraction failed: {str(e)}")
             return []
 
+    
     def generate_options_and_answers(self, question_text, options_count):
         """Generate options using Gemini with improved prompt for reliable JSON"""
         try:
@@ -499,7 +500,7 @@ class GenerateAnswerOptionsView(APIView):
                 exam.is_processed = True
                 exam.options_generated = True
                 exam.answers_generated = True
-                exam.output_pdf = output_pdf_path  # Ensure it's set here as well
+                exam.output_pdf = output_pdf_path 
                 exam.save()
 
             return Response(

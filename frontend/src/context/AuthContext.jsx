@@ -254,7 +254,7 @@ export const AuthProvider = ({ children }) => {
       return false;
     }
   };
-  
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -288,8 +288,6 @@ export const AuthProvider = ({ children }) => {
               logout();
             }
           } else {
-            // If we have user data in state, keep using it
-            // Otherwise, try to get the full user profile
             if (!user) {
               try {
                 const response = await axios.get(

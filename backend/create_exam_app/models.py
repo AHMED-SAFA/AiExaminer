@@ -38,7 +38,7 @@ class Exam(models.Model):
         choices=[
             ("pending", "Pending"),
             ("processing", "Processing"),
-            ("generated", "Generated"),
+            ("Generated", "Generated"),
             ("failed", "Failed"),
         ],
     )

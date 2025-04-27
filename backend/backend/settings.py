@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "auth_app",
     "profile_app",
     "create_exam_app",
+    "take_exam_app",
 ]
 
 MIDDLEWARE = [

@@ -32,7 +32,8 @@ import IsoIcon from "@mui/icons-material/Iso";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 const Home = () => {
-  const { token } = useAuth();
+  const { user, token } = useAuth();
+  const [userData, setUserData] = useState(null);
   const navigate = useNavigate();
   const [exams, setExams] = useState([]);
   const [examLoading, setExamLoading] = useState(true);
@@ -44,6 +45,25 @@ const Home = () => {
     message: "",
     severity: "info",
   });
+
+  useEffect(() => {
+    fetchExams();
+    fetchUserData();
+  }, []);
+
+  const fetchUserData = async () => {
+    try {
+      const response = await axios.get("http://127.0.0.1:8000/api/auth/user/", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log("Fetched userData from home:", response.data);
+      setUserData(response.data);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
 
   const handleModalOpen = () => {
     setModalOpen(true);
@@ -57,10 +77,6 @@ const Home = () => {
   const handleSnackbarClose = () => {
     setSnackbar({ ...snackbar, open: false });
   };
-
-  useEffect(() => {
-    fetchExams();
-  }, []);
 
   const fetchExams = async () => {
     try {
@@ -168,8 +184,23 @@ const Home = () => {
     }
   };
 
-  const handleExamClick = (examId) => {
-    navigate(`/exam/${examId}`);
+  const extractExamId = (url) => {
+    const regex = /exam_\d+_processed_\d+/;
+    const match = url.match(regex);
+
+    if (match) {
+      return match[0];
+    } else {
+      console.error("No match found in the URL:", url);
+      return null;
+    }
+  };
+
+  const handleExamClick = (examId, output_pdf) => {
+    const extractedExamId = extractExamId(output_pdf);
+    navigate(
+      `/exam/${examId}/${extractedExamId}/${userData.id}/${userData.username}`
+    );
   };
 
   const getStatusColor = (status) => {
@@ -272,7 +303,7 @@ const Home = () => {
                       boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.15)",
                     },
                   }}
-                  onClick={() => handleExamClick(exam.id)}
+                  onClick={() => handleExamClick(exam.id, exam.output_pdf)}
                 >
                   <CardContent>
                     <Typography variant="h6" noWrap gutterBottom>
