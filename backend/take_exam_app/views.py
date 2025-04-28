@@ -253,52 +253,6 @@ class SubmitAnswerView(generics.CreateAPIView):
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
 
-
-# class CompleteExamView(generics.UpdateAPIView):
-#     """View to complete an exam and calculate score"""
-
-#     permission_classes = [IsAuthenticated]
-#     serializer_class = ExamSessionSerializer
-
-#     def update(self, request, *args, **kwargs):
-#         session_id = kwargs["pk"]
-#         session = get_object_or_404(ExamSession, pk=session_id, user=request.user)
-
-#         if session.is_completed:
-#             return Response(
-#                 {"error": "This exam session has already been completed"},
-#                 status=status.HTTP_400_BAD_REQUEST,
-#             )
-
-#         with transaction.atomic():
-#             correct_answers = session.answers.filter(is_correct=True).count()
-#             total_questions = session.exam.questions.count()
-#             answered_questions = session.answers.count()
-
-#             # Calculate raw score
-#             raw_score = correct_answers * session.exam.each_question_marks
-
-#             # Apply minus marking if enabled
-#             if session.exam.minus_marking:
-#                 wrong_answers = session.answers.filter(is_correct=False).count()
-#                 penalty = wrong_answers * session.exam.minus_marking_value
-#                 raw_score -= penalty
-#                 final_score = raw_score
-#             else:
-#                 final_score = raw_score
-
-#             # Update session
-#             session.is_completed = True
-#             session.corrected_ans = correct_answers
-#             session.wrong_ans = total_questions - correct_answers
-#             session.end_time = timezone.now()
-#             session.score = max(0, final_score)
-#             session.save()
-
-#         serializer = self.get_serializer(session)
-#         return Response(serializer.data)
-
-
 class CompleteExamView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ExamSessionSerializer
@@ -314,12 +268,21 @@ class CompleteExamView(generics.UpdateAPIView):
             )
 
         with transaction.atomic():
-            total_questions = session.exam.questions.count()
-            answered_questions = session.answers.count()
-            correct_answers = session.answers.filter(is_correct=True).count()
-            wrong_answers = session.answers.filter(is_correct=False).count()
-            unanswered = total_questions - answered_questions
-
+            # Get all questions for this exam
+            all_questions = session.exam.questions.all()
+            total_questions = all_questions.count()
+            
+            # Get user's answers for this session
+            user_answers = session.answers.all()
+            answered_question_ids = set(answer.question_id for answer in user_answers)
+            
+            # Calculate correct and wrong answers
+            correct_answers = user_answers.filter(is_correct=True).count()
+            wrong_answers = user_answers.filter(is_correct=False).count()
+            
+            # Find unanswered questions (questions without any answer)
+            unanswered_questions = total_questions - len(answered_question_ids)
+            
             # Calculate raw score
             raw_score = correct_answers * session.exam.each_question_marks
 
@@ -335,10 +298,20 @@ class CompleteExamView(generics.UpdateAPIView):
             session.is_completed = True
             session.corrected_ans = correct_answers
             session.wrong_ans = wrong_answers
-            session.unanswered = unanswered
+            session.unanswered = unanswered_questions
             session.end_time = timezone.now()
             session.score = max(0, final_score)
             session.save()
+
+            # Create UserAnswer records for unanswered questions
+            unanswered_question_ids = set(q.id for q in all_questions) - answered_question_ids
+            for question_id in unanswered_question_ids:
+                UserAnswer.objects.create(
+                    session=session,
+                    question_id=question_id,
+                    selected_option=None,
+                    is_correct=None
+                )
 
         serializer = self.get_serializer(session)
         return Response(serializer.data)

@@ -117,10 +117,11 @@ class ExamDetailSerializer(serializers.ModelSerializer):
 
 class UserAnswerSerializer(serializers.ModelSerializer):
     """Serializer for user exam answers"""
-
+    status = serializers.CharField(source='get_status_display', read_only=True)
+    
     class Meta:
         model = UserAnswer
-        fields = ["id", "question", "selected_option"]
+        fields = ["id", "question", "selected_option", "is_correct", "status"]
 
     def validate(self, data):
         """Validate the selected option belongs to the question"""

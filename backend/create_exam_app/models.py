@@ -103,6 +103,10 @@ class ExamSession(models.Model):
 
 class UserAnswer(models.Model):
     """Model for storing user's answers during exam"""
+    class AnswerStatus(models.TextChoices):
+        CORRECT = 'correct', 'Correct'
+        WRONG = 'wrong', 'Wrong'
+        UNANSWERED = 'unanswered', 'Unanswered'
 
     session = models.ForeignKey(
         ExamSession, on_delete=models.CASCADE, related_name="answers"
@@ -112,9 +116,23 @@ class UserAnswer(models.Model):
         Option, on_delete=models.CASCADE, null=True, blank=True
     )
     is_correct = models.BooleanField(null=True, blank=True)
+    status = models.CharField(
+        max_length=10,
+        choices=AnswerStatus.choices,
+        default=AnswerStatus.UNANSWERED
+    )
 
     class Meta:
         unique_together = ("session", "question")
+
+    def save(self, *args, **kwargs):
+        if self.is_correct is True:
+            self.status = self.AnswerStatus.CORRECT
+        elif self.is_correct is False:
+            self.status = self.AnswerStatus.WRONG
+        else:
+            self.status = self.AnswerStatus.UNANSWERED
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.session.user.username} - Question:{self.question.id}"

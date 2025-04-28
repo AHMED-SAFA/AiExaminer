@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
@@ -117,7 +118,6 @@ function PreviousExam() {
                 <Typography variant="h6" gutterBottom>
                   {session.exam_title}
                 </Typography>
-
                 <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
                   <Chip
                     icon={<TimelineIcon />}
@@ -130,7 +130,6 @@ function PreviousExam() {
                     variant="outlined"
                   />
                 </Box>
-
                 <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
                   <Chip
                     icon={<CheckCircleIcon />}
@@ -151,12 +150,17 @@ function PreviousExam() {
                     variant="outlined"
                   />
                 </Box>
-
                 <Typography variant="body2" color="text.secondary">
                   Completed on: {session.completion_date}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Duration: {session.duration} minutes
+                </Typography>{" "}
+                <Typography variant="body2" color="text.secondary">
+                  Minus Marking:{" "}
+                  {session.minus_marking_value
+                    ? session.minus_marking_value
+                    : "0"}
                 </Typography>
                 <Box sx={{ mt: 2 }}>
                   <Box

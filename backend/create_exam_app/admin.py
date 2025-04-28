@@ -39,6 +39,7 @@ class QuestionInline(admin.TabularInline):
 @admin.register(Exam)
 class ExamAdmin(admin.ModelAdmin):
     list_display = (
+        "id",
         "title",
         "creator_with_link",
         "duration",
@@ -106,7 +107,7 @@ class UserAnswerInline(admin.TabularInline):
 
 @admin.register(ExamSession)
 class ExamSessionAdmin(admin.ModelAdmin):
-    list_display = ("exam", "user", "start_time", "duration", "is_completed", "score", "unanswered")
+    list_display = ("id","exam", "user", "start_time", "duration", "is_completed", "score", "unanswered")
     list_filter = ("exam", "is_completed", "start_time")
     search_fields = ("user__username", "exam__title")
     readonly_fields = ("duration",)
@@ -126,24 +127,39 @@ class ExamSessionAdmin(admin.ModelAdmin):
 @admin.register(UserAnswer)
 class UserAnswerAdmin(admin.ModelAdmin):
     list_display = (
+        "id",
         "session_info",
         "short_question",
         "selected_option_text",
+        "status_display",
         "is_correct",
     )
-    list_filter = ("is_correct", "session__exam")
+    list_filter = (
+        "status",
+        "is_correct", 
+        "session__exam",
+        "session__user",
+    )
     search_fields = (
         "session__user__username",
         "question__question_text",
         "selected_option__option_text",
     )
-    readonly_fields = ("session", "question", "selected_option", "is_correct")
+    readonly_fields = (
+        "session", 
+        "question", 
+        "selected_option", 
+        "is_correct",
+        "status",
+    )
     list_per_page = 30
+    list_select_related = ("session", "question", "selected_option", "session__exam", "session__user")
 
     def session_info(self, obj):
         return f"{obj.session.user.username} - {obj.session.exam.title}"
 
     session_info.short_description = "Session"
+    session_info.admin_order_field = "session__user__username"
 
     def short_question(self, obj):
         return (
@@ -153,10 +169,29 @@ class UserAnswerAdmin(admin.ModelAdmin):
         )
 
     short_question.short_description = "Question"
+    short_question.admin_order_field = "question__question_text"
 
     def selected_option_text(self, obj):
-        return (
-            obj.selected_option.option_text[:50] + "..." if obj.selected_option else "-"
-        )
+        if obj.selected_option:
+            text = obj.selected_option.option_text
+            return f"{text[:50]}..." if len(text) > 50 else text
+        return "- (Unanswered)"
 
     selected_option_text.short_description = "Selected Answer"
+    selected_option_text.admin_order_field = "selected_option__option_text"
+
+    def status_display(self, obj):
+        color_map = {
+            "correct": "green",
+            "wrong": "red",
+            "unanswered": "gray",
+        }
+        color = color_map.get(obj.status, "black")
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{}</span>',
+            color,
+            obj.get_status_display().upper(),
+        )
+
+    status_display.short_description = "Status"
+    status_display.admin_order_field = "status"
