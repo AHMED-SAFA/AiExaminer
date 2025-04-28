@@ -256,34 +256,10 @@ export default function Navbar() {
                 transition: "background-color 0.3s ease",
               }}
             >
-              <Link to="/create-exam" style={{ textDecoration: "none" }}>
-                <Typography
-                  variant="body2"
-                  component="span"
-                  sx={{ fontWeight: 600, color: "white" }}
-                >
-                  Create Exam
-                </Typography>
-              </Link>
-            </Typography>
-            <Typography
-              variant="body2"
-              component="span"
-              sx={{
-                fontWeight: 500,
-                backgroundColor: "indigo",
-                cursor: "pointer",
-                px: 2,
-                py: 1,
-                borderRadius: 1,
-                color: "white",
-                "&:hover": {
-                  backgroundColor: "darkblue",
-                },
-                transition: "background-color 0.3s ease",
-              }}
-            >
-              <Link to="/previous-exams" style={{ textDecoration: "none" }}>
+              <Link
+                to={`/${userData.id}/previous-exams`}
+                style={{ textDecoration: "none" }}
+              >
                 <Typography
                   variant="body2"
                   component="span"

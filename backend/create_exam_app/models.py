@@ -26,6 +26,7 @@ class Exam(models.Model):
     pdf_file = models.FileField(upload_to=pdf_upload_path)
     duration = models.IntegerField(help_text="Duration in minutes")
     total_marks = models.IntegerField(default=100)
+    each_question_marks = models.IntegerField(default=1)
     minus_marking = models.BooleanField(default=False)
     minus_marking_value = models.FloatField(default=0, null=True, blank=True)
     mcq_options_count = models.IntegerField(default=2)
@@ -90,6 +91,9 @@ class ExamSession(models.Model):
     )
     start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
+    corrected_ans = models.IntegerField(null=True, blank=True)
+    unanswered = models.IntegerField(null=True, blank=True)
+    wrong_ans = models.IntegerField(null=True, blank=True)
     is_completed = models.BooleanField(default=False)
     score = models.FloatField(null=True, blank=True)
 

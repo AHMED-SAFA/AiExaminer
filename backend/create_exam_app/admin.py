@@ -43,6 +43,7 @@ class ExamAdmin(admin.ModelAdmin):
         "creator_with_link",
         "duration",
         "total_marks",
+        "each_question_marks",
         "created_at",
         "processing_status",
         "is_processed",
@@ -60,6 +61,7 @@ class ExamAdmin(admin.ModelAdmin):
                 "fields": (
                     "duration",
                     "total_marks",
+                    "each_question_marks",
                     "minus_marking",
                     "minus_marking_value",
                     "mcq_options_count",
@@ -104,7 +106,7 @@ class UserAnswerInline(admin.TabularInline):
 
 @admin.register(ExamSession)
 class ExamSessionAdmin(admin.ModelAdmin):
-    list_display = ("exam", "user", "start_time", "duration", "is_completed", "score")
+    list_display = ("exam", "user", "start_time", "duration", "is_completed", "score", "unanswered")
     list_filter = ("exam", "is_completed", "start_time")
     search_fields = ("user__username", "exam__title")
     readonly_fields = ("duration",)

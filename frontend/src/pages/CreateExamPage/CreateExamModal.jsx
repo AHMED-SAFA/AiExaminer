@@ -29,6 +29,7 @@ const CreateExamModal = ({ open, handleClose, handleSubmit }) => {
     pdfFile: null,
     duration: 60,
     totalMarks: 50,
+    each_question_marks: 1,
     minusMarking: false,
     minusMarkingValue: "",
     minmcqOptionsCount: 2,
@@ -63,6 +64,7 @@ const CreateExamModal = ({ open, handleClose, handleSubmit }) => {
     formData.append("pdf_file", examData.pdfFile);
     formData.append("duration", examData.duration);
     formData.append("total_marks", examData.totalMarks);
+    formData.append("each_question_marks", examData.each_question_marks);
     formData.append("minus_marking", examData.minusMarking);
     formData.append("minus_marking_value", examData.minusMarkingValue);
     formData.append("mcq_options_count", examData.minmcqOptionsCount);
@@ -158,6 +160,16 @@ const CreateExamModal = ({ open, handleClose, handleSubmit }) => {
               onChange={handleInputChange}
               fullWidth
               InputProps={{ inputProps: { min: 1 } }}
+            />
+            <TextField
+              name="each_question_marks"
+              label="Marks Per Question"
+              type="number"
+              value={examData.each_question_marks}
+              onChange={handleInputChange}
+              fullWidth
+              InputProps={{ inputProps: { min: 1 } }}
+              helperText="Number of marks for each question"
             />
 
             <FormControlLabel

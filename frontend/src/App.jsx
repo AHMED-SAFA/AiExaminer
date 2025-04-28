@@ -11,6 +11,8 @@ import ResetPassword from "./pages/AuthPages/ResetPassword";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Profile from "./pages/Profile";
+import ExamSession from "./pages/TakeExam/ExamSession";
+import PreviousExam from "./pages/PreviousExam";
 
 function App() {
   const LayoutWithNavbar = ({ children }) => (
@@ -32,6 +34,23 @@ function App() {
               </LayoutWithNavbar>
             }
           />
+          <Route
+            path="/exam-session/:examId/:extractedExamId/:userId/:username"
+            element={
+              <LayoutWithNavbar>
+                <ExamSession />
+              </LayoutWithNavbar>
+            }
+          />
+          <Route
+            path="/:userId/previous-exams"
+            element={
+              <LayoutWithNavbar>
+                <PreviousExam />
+              </LayoutWithNavbar>
+            }
+          />
+          {/* Other routes */}
           <Route
             path="/profile"
             element={

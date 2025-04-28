@@ -32,7 +32,7 @@ import IsoIcon from "@mui/icons-material/Iso";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 const Home = () => {
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   const [userData, setUserData] = useState(null);
   const navigate = useNavigate();
   const [exams, setExams] = useState([]);
@@ -197,9 +197,43 @@ const Home = () => {
   };
 
   const handleExamClick = (examId, output_pdf) => {
+    // First check if the exam is ready
+    const exam = exams.find((e) => e.id === examId);
+
+    if (!exam) {
+      setSnackbar({
+        open: true,
+        message: "Exam not found",
+        severity: "error",
+      });
+      return;
+    }
+
+    if (exam.processing_status !== "Generated") {
+      setSnackbar({
+        open: true,
+        message:
+          "This exam is not ready yet. Please generate questions and answers first.",
+        severity: "warning",
+      });
+      return;
+    }
+
+    // Get exam ID from the output PDF path
     const extractedExamId = extractExamId(output_pdf);
+
+    if (!extractedExamId) {
+      setSnackbar({
+        open: true,
+        message: "Invalid exam identifier",
+        severity: "error",
+      });
+      return;
+    }
+
+    // Navigate to the exam session page
     navigate(
-      `/exam/${examId}/${extractedExamId}/${userData.id}/${userData.username}`
+      `/exam-session/${examId}/${extractedExamId}/${userData.id}/${userData.username}`
     );
   };
 
@@ -309,7 +343,6 @@ const Home = () => {
                     <Typography variant="h6" noWrap gutterBottom>
                       {exam.title}
                     </Typography>
-
                     <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                       <AccessTimeIcon fontSize="small" sx={{ mr: 1 }} />
                       <Typography variant="body2">
@@ -320,7 +353,8 @@ const Home = () => {
                     <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                       <GradeIcon fontSize="small" sx={{ mr: 1 }} />
                       <Typography variant="body2">
-                        {exam.total_marks} marks
+                        Total: {exam.total_marks} marks (
+                        {exam.each_question_marks} per question)
                       </Typography>
                     </Box>
 
@@ -331,7 +365,6 @@ const Home = () => {
                           "Questions count will be updated after generating questions"}
                       </Typography>
                     </Box>
-
                     <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                       <RemoveCircleOutlineIcon
                         fontSize="small"
@@ -349,7 +382,6 @@ const Home = () => {
                           : "No minus marking"}
                       </Typography>
                     </Box>
-
                     <Box sx={{ mt: 2 }}>
                       <Chip
                         label={exam.processing_status.toUpperCase()}
@@ -357,7 +389,6 @@ const Home = () => {
                         size="small"
                       />
                     </Box>
-
                     <Box sx={{ mt: 2 }}>
                       <Button
                         variant="outlined"
@@ -391,7 +422,6 @@ const Home = () => {
                         )}
                       </Button>
                     </Box>
-
                     {exam.output_pdf && (
                       <Box sx={{ mt: 2 }}>
                         <Button
@@ -399,7 +429,7 @@ const Home = () => {
                           component="a"
                           href={`${exam.output_pdf}`}
                           target="_blank"
-                          rel="noopener noreferrer" // Security best practice for external links
+                          rel="noopener noreferrer"
                           startIcon={<VisibilityIcon />}
                           size="small"
                           onClick={(e) => e.stopPropagation()}
