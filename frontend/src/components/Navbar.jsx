@@ -257,7 +257,7 @@ export default function Navbar() {
               }}
             >
               <Link
-                to={`/${userData.id}/previous-exams`}
+                // to={`/${userData.id}/previous-exams`}
                 style={{ textDecoration: "none" }}
               >
                 <Typography

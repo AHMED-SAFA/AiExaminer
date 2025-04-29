@@ -5,18 +5,22 @@ import {
   Typography,
   Button,
   Box,
-  Avatar,
   Paper,
-  Divider,
   Card,
   CardContent,
-  IconButton,
-  Fade,
   Chip,
   Grid,
   CircularProgress,
   Snackbar,
   Alert,
+  Dialog,
+  DialogContent,
+  DialogActions,
+  Divider,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -26,11 +30,18 @@ import AddIcon from "@mui/icons-material/Add";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import GradeIcon from "@mui/icons-material/Grade";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import WarningIcon from "@mui/icons-material/Warning";
+import InfoIcon from "@mui/icons-material/Info";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import CancelIcon from "@mui/icons-material/Cancel";
+import QuizIcon from "@mui/icons-material/Quiz";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import IsoIcon from "@mui/icons-material/Iso";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+
 const Home = () => {
   const { token } = useAuth();
   const [userData, setUserData] = useState(null);
@@ -44,6 +55,11 @@ const Home = () => {
     open: false,
     message: "",
     severity: "info",
+  });
+  const [examStartDialog, setExamStartDialog] = useState({
+    open: false,
+    examId: null,
+    extractedExamId: null,
   });
 
   useEffect(() => {
@@ -197,7 +213,6 @@ const Home = () => {
   };
 
   const handleExamClick = (examId, output_pdf) => {
-    // First check if the exam is ready
     const exam = exams.find((e) => e.id === examId);
 
     if (!exam) {
@@ -219,7 +234,6 @@ const Home = () => {
       return;
     }
 
-    // Get exam ID from the output PDF path
     const extractedExamId = extractExamId(output_pdf);
 
     if (!extractedExamId) {
@@ -231,10 +245,24 @@ const Home = () => {
       return;
     }
 
-    // Navigate to the exam session page
+    // Open confirmation dialog instead of navigating directly
+    setExamStartDialog({
+      open: true,
+      examId,
+      extractedExamId,
+    });
+  };
+
+  const handleStartExam = () => {
+    const { examId, extractedExamId } = examStartDialog;
+    setExamStartDialog({ open: false, examId: null, extractedExamId: null });
     navigate(
       `/exam-session/${examId}/${extractedExamId}/${userData.id}/${userData.username}`
     );
+  };
+
+  const handleCancelStart = () => {
+    setExamStartDialog({ open: false, examId: null, extractedExamId: null });
   };
 
   const getStatusColor = (status) => {
@@ -467,6 +495,234 @@ const Home = () => {
         handleSubmit={handleExamSubmit}
         error={error}
       />
+
+      {/* Exam Start Confirmation Dialog */}
+      <Dialog
+        open={examStartDialog.open}
+        onClose={handleCancelStart}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            overflow: "hidden",
+          },
+        }}
+      >
+        {/* Custom Header */}
+        <Box
+          sx={{
+            bgcolor: "primary.main",
+            color: "primary.contrastText",
+            p: 2,
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <CheckCircleIcon sx={{ mr: 1.5 }} />
+          <Typography variant="h6" component="h2" fontWeight="bold">
+            Start Exam?
+          </Typography>
+        </Box>
+
+        <DialogContent sx={{ p: 3 }}>
+          <Typography variant="subtitle1" sx={{ mb: 2.5, fontWeight: 500 }}>
+            Are you sure you want to start this exam?
+          </Typography>
+
+          {/* Exam Details Card */}
+          {exams.map((exam) => {
+            if (exam.id === examStartDialog.examId) {
+              return (
+                <Paper
+                  key={exam.id}
+                  elevation={0}
+                  sx={{
+                    p: 2.5,
+                    mb: 3,
+                    bgcolor: "primary.lighter",
+                    border: 1,
+                    borderColor: "primary.light",
+                    borderRadius: 2,
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    color="primary.dark"
+                    fontWeight="bold"
+                    sx={{ mb: 2 }}
+                  >
+                    {exam.title}
+                  </Typography>
+
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <AccessTimeIcon color="primary" sx={{ mr: 1.5 }} />
+                        <Typography variant="body1">
+                          <Box component="span" fontWeight="medium">
+                            {exam.duration}
+                          </Box>{" "}
+                          minutes
+                        </Typography>
+                      </Box>
+                    </Grid>
+
+                    <Grid item xs={6}>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <QuizIcon color="primary" sx={{ mr: 1.5 }} />
+                        <Typography variant="body1">
+                          <Box component="span" fontWeight="medium">
+                            {exam.question_count}
+                          </Box>{" "}
+                          questions
+                        </Typography>
+                      </Box>
+                    </Grid>
+
+                    <Grid item xs={6}>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <GradeIcon color="primary" sx={{ mr: 1.5 }} />
+                        <Typography variant="body1">
+                          <Box component="span" fontWeight="medium">
+                            {exam.total_marks}
+                          </Box>{" "}
+                          total marks
+                        </Typography>
+                      </Box>
+                    </Grid>
+
+                    <Grid item xs={6}>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <CheckCircleIcon color="primary" sx={{ mr: 1.5 }} />
+                        <Typography variant="body1">
+                          <Box component="span" fontWeight="medium">
+                            {exam.each_question_marks}
+                          </Box>{" "}
+                          mark per question
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+
+                  {exam.minus_marking && (
+                    <Box
+                      sx={{
+                        mt: 2,
+                        p: 1.5,
+                        bgcolor: "warning.lighter",
+                        borderRadius: 1,
+                        border: 1,
+                        borderColor: "warning.light",
+                        display: "flex",
+                        alignItems: "flex-start",
+                      }}
+                    >
+                      <WarningIcon color="warning" sx={{ mr: 1.5, mt: 0.25 }} />
+                      <Typography variant="body2">
+                        <Box component="span" fontWeight="bold">
+                          Negative marking:
+                        </Box>{" "}
+                        {exam.minus_marking_value} marks will be deducted for
+                        each incorrect answer
+                      </Typography>
+                    </Box>
+                  )}
+                </Paper>
+              );
+            }
+            return null;
+          })}
+
+          {/* Instructions */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              bgcolor: "grey.50",
+              borderRadius: 2,
+              border: 1,
+              borderColor: "grey.200",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+              <InfoIcon color="info" sx={{ mr: 1 }} />
+              <Typography variant="subtitle2" color="text.secondary">
+                Important Instructions
+              </Typography>
+            </Box>
+
+            <Divider sx={{ mb: 1.5 }} />
+
+            <List dense disablePadding>
+              <ListItem sx={{ py: 0.5 }}>
+                <ListItemIcon sx={{ minWidth: 24 }}>
+                  <ErrorOutlineIcon color="info" fontSize="small" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Once started, the exam timer cannot be paused"
+                  primaryTypographyProps={{ variant: "body2" }}
+                />
+              </ListItem>
+
+              <ListItem sx={{ py: 0.5 }}>
+                <ListItemIcon sx={{ minWidth: 24 }}>
+                  <ErrorOutlineIcon color="info" fontSize="small" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Ensure you have a stable internet connection"
+                  primaryTypographyProps={{ variant: "body2" }}
+                />
+              </ListItem>
+
+              <ListItem sx={{ py: 0.5 }}>
+                <ListItemIcon sx={{ minWidth: 24 }}>
+                  <ErrorOutlineIcon color="info" fontSize="small" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Submit before time expires to avoid auto-submission"
+                  primaryTypographyProps={{ variant: "body2" }}
+                />
+              </ListItem>
+            </List>
+          </Paper>
+        </DialogContent>
+
+        <DialogActions
+          sx={{
+            px: 3,
+            py: 2,
+            bgcolor: "grey.50",
+            borderTop: 1,
+            borderColor: "grey.200",
+          }}
+        >
+          <Button
+            onClick={handleCancelStart}
+            color="error"
+            variant="outlined"
+            startIcon={<CancelIcon />}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleStartExam}
+            color="primary"
+            variant="contained"
+            startIcon={<CheckCircleIcon />}
+            autoFocus
+            sx={{
+              px: 3,
+              boxShadow: 2,
+              "&:hover": {
+                boxShadow: 4,
+              },
+            }}
+          >
+            Start Exam
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Snackbar for notifications */}
       <Snackbar

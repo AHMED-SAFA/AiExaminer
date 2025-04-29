@@ -6,13 +6,13 @@ from .views import (
     ExamDetailView,
     ExamQuestionsView,
     ProcessExamPDFView,
-    UserExamSessionsView,
+    DisplayUserExamSessionsView,
 )
 
 urlpatterns = [
     path(
         "sessions/<int:user_id>/",
-        UserExamSessionsView.as_view(),
+        DisplayUserExamSessionsView.as_view(),
         name="user-exam-sessions",
     ),
     path("start-session/", StartExamView.as_view(), name="start-session"),
@@ -27,4 +27,5 @@ urlpatterns = [
         "<int:exam_id>/questions/", ExamQuestionsView.as_view(), name="exam-questions"
     ),
     path("process-pdf/", ProcessExamPDFView.as_view(), name="process-pdf"),
+ 
 ]

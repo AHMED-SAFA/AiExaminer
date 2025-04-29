@@ -2,6 +2,10 @@ from django.contrib import admin
 from django.utils.html import format_html
 from .models import Exam, Question, Option, ExamSession, UserAnswer
 
+
+admin.site.register(Option)
+
+
 class OptionInline(admin.TabularInline):
     model = Option
     extra = 0
@@ -107,7 +111,16 @@ class UserAnswerInline(admin.TabularInline):
 
 @admin.register(ExamSession)
 class ExamSessionAdmin(admin.ModelAdmin):
-    list_display = ("id","exam", "user", "start_time", "duration", "is_completed", "score", "unanswered")
+    list_display = (
+        "id",
+        "exam",
+        "user",
+        "start_time",
+        "duration",
+        "is_completed",
+        "score",
+        "unanswered",
+    )
     list_filter = ("exam", "is_completed", "start_time")
     search_fields = ("user__username", "exam__title")
     readonly_fields = ("duration",)
@@ -136,7 +149,7 @@ class UserAnswerAdmin(admin.ModelAdmin):
     )
     list_filter = (
         "status",
-        "is_correct", 
+        "is_correct",
         "session__exam",
         "session__user",
     )
@@ -146,14 +159,20 @@ class UserAnswerAdmin(admin.ModelAdmin):
         "selected_option__option_text",
     )
     readonly_fields = (
-        "session", 
-        "question", 
-        "selected_option", 
+        "session",
+        "question",
+        "selected_option",
         "is_correct",
         "status",
     )
     list_per_page = 30
-    list_select_related = ("session", "question", "selected_option", "session__exam", "session__user")
+    list_select_related = (
+        "session",
+        "question",
+        "selected_option",
+        "session__exam",
+        "session__user",
+    )
 
     def session_info(self, obj):
         return f"{obj.session.user.username} - {obj.session.exam.title}"

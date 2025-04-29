@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -21,12 +22,14 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  IconButton,
 } from "@mui/material";
 import axios from "axios";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ClearIcon from "@mui/icons-material/Clear";
 
 const ExamSession = () => {
   const { examId } = useParams();
@@ -40,16 +43,13 @@ const ExamSession = () => {
   const [loadingMessage, setLoadingMessage] = useState(
     "Starting exam session..."
   );
-
-  // State for tracking exam progress
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [examSession, setExamSession] = useState(null);
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [examComplete, setExamComplete] = useState(false);
   const [results, setResults] = useState(null);
-
-  // UI state
+  const [sessionStartTime, setSessionStartTime] = useState(null);
   const [error, setError] = useState(null);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -58,16 +58,79 @@ const ExamSession = () => {
   });
   const [confirmDialog, setConfirmDialog] = useState(false);
 
+  // Local storage keys
+  const SESSION_STORAGE_KEY = `exam_session_${examId}`;
+
+  // Save session state to localStorage
+  const saveSessionState = (sessionData) => {
+    const dataToSave = {
+      ...sessionData,
+      lastSavedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(dataToSave));
+  };
+
+  // Load session state from localStorage
+  const loadSessionState = () => {
+    const savedData = localStorage.getItem(SESSION_STORAGE_KEY);
+    return savedData ? JSON.parse(savedData) : null;
+  };
+
+  // Clear session state from localStorage
+  const clearSessionState = () => {
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+  };
+
   // Initialize exam session
   useEffect(() => {
     console.log("Exam ID from URL:", examId);
     console.log("Token from context:", token);
+
     const startExam = async () => {
       try {
         setLoading(true);
+
+        const savedSession = loadSessionState();
+
+        if (savedSession && !savedSession.examComplete) {
+          setLoadingMessage("Resuming previous session...");
+          console.log("Resuming session from localStorage:", savedSession);
+
+          // Restore state from saved session
+          setExam(savedSession.exam);
+          setQuestions(savedSession.questions);
+          setExamSession(savedSession.examSession);
+          setSelectedAnswers(savedSession.selectedAnswers || {});
+          setCurrentQuestion(savedSession.currentQuestion || 0);
+
+          // Calculate remaining time
+          if (savedSession.sessionStartTime && savedSession.timeRemaining) {
+            const elapsedSinceLastSave = Math.floor(
+              (new Date() - new Date(savedSession.lastSavedAt)) / 1000
+            );
+
+            // Ensure we don't go below zero
+            const adjustedTimeRemaining = Math.max(
+              0,
+              savedSession.timeRemaining - elapsedSinceLastSave
+            );
+
+            setTimeRemaining(adjustedTimeRemaining);
+            setSessionStartTime(savedSession.sessionStartTime);
+          } else {
+            // Fallback to exam duration if time data is corrupted
+            setTimeRemaining(savedSession.exam.duration * 60);
+            setSessionStartTime(new Date().toISOString());
+          }
+
+          setLoading(false);
+          return;
+        }
+
+        // Start new session if no saved session exists
         setLoadingMessage("Fetching exam details...");
 
-        // 1. Fetch exam details-- working
+        // 1. Fetch exam details
         const examResponse = await axios.get(
           `http://127.0.0.1:8000/api/take-exam/${examId}/`,
           {
@@ -110,8 +173,23 @@ const ExamSession = () => {
         setQuestions(questionsResponse.data);
 
         // 4. Set timer
+        const startTime = new Date().toISOString();
+        setSessionStartTime(startTime);
         setTimeRemaining(examResponse.data.duration * 60);
 
+        // 5. Save initial state to localStorage
+        const initialState = {
+          exam: examResponse.data,
+          examSession: sessionResponse.data,
+          questions: questionsResponse.data,
+          selectedAnswers: {},
+          currentQuestion: 0,
+          timeRemaining: examResponse.data.duration * 60,
+          sessionStartTime: startTime,
+          examComplete: false,
+        };
+
+        saveSessionState(initialState);
         setLoading(false);
       } catch (error) {
         console.error("Error starting exam:", error);
@@ -142,6 +220,37 @@ const ExamSession = () => {
     return () => clearInterval(timer);
   }, [timeRemaining, examComplete]);
 
+  // Save current state to localStorage whenever relevant state changes
+  useEffect(() => {
+    if (examSession && exam && questions.length > 0 && !examComplete) {
+      const currentState = {
+        exam,
+        examSession,
+        questions,
+        selectedAnswers,
+        currentQuestion,
+        timeRemaining,
+        sessionStartTime,
+        examComplete,
+      };
+
+      saveSessionState(currentState);
+    }
+
+    // When exam is complete, clear localStorage
+    if (examComplete) {
+      clearSessionState();
+    }
+  }, [
+    selectedAnswers,
+    currentQuestion,
+    timeRemaining,
+    examComplete,
+    examSession,
+    exam,
+    questions,
+  ]);
+
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -150,11 +259,21 @@ const ExamSession = () => {
 
   const handleAnswer = async (questionId, optionId) => {
     try {
+      // If the same option is clicked again, treat it as deselection
+      const isDeselection = selectedAnswers[questionId] === optionId;
+
       // Update local state
-      setSelectedAnswers({
-        ...selectedAnswers,
-        [questionId]: optionId,
-      });
+      const updatedAnswers = { ...selectedAnswers };
+
+      if (isDeselection) {
+        // Remove the answer if deselecting
+        delete updatedAnswers[questionId];
+      } else {
+        // Set the new answer
+        updatedAnswers[questionId] = optionId;
+      }
+
+      setSelectedAnswers(updatedAnswers);
 
       // Submit answer to backend
       const response = await axios.post(
@@ -162,7 +281,7 @@ const ExamSession = () => {
         {
           session: examSession.id,
           question: questionId,
-          selected_option: optionId,
+          selected_option: isDeselection ? null : optionId,
         },
         {
           headers: {
@@ -180,6 +299,44 @@ const ExamSession = () => {
       setSnackbar({
         open: true,
         message: "Failed to save your answer. Please try again.",
+        severity: "error",
+      });
+    }
+  };
+
+  // Explicitly clear an answer
+  const clearAnswer = async (questionId) => {
+    try {
+      // Only proceed if there's an answer to clear
+      if (!selectedAnswers[questionId]) {
+        return;
+      }
+
+      // Update local state
+      const updatedAnswers = { ...selectedAnswers };
+      delete updatedAnswers[questionId];
+      setSelectedAnswers(updatedAnswers);
+
+      // Submit null to backend
+      const response = await axios.post(
+        "http://127.0.0.1:8000/api/take-exam/submit-answer/",
+        {
+          session: examSession.id,
+          question: questionId,
+          selected_option: null,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log("Answer cleared response:", response.data);
+    } catch (error) {
+      console.error("Error clearing answer:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to clear your answer. Please try again.",
         severity: "error",
       });
     }
@@ -216,10 +373,12 @@ const ExamSession = () => {
 
       setResults(response.data);
       setExamComplete(true);
+      clearSessionState();
       setLoading(false);
     } catch (error) {
       console.error("Error submitting exam:", error);
       console.log("Error submitting exam:", error);
+      clearSessionState();
       setError("Failed to submit exam. Please try again.");
       setLoading(false);
     }
@@ -387,16 +546,38 @@ const ExamSession = () => {
       {questions.length > 0 && (
         <Card elevation={3} sx={{ mb: 3 }}>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
-              {questions[currentQuestion].question_text}
-            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Typography variant="h6" gutterBottom>
+                {questions[currentQuestion].question_text}
+              </Typography>
+
+              {/* Clear Answer Button - only show if an answer is selected */}
+              {selectedAnswers[questions[currentQuestion].id] && (
+                <IconButton
+                  color="default"
+                  onClick={() => clearAnswer(questions[currentQuestion].id)}
+                  size="small"
+                  sx={{ ml: 2 }}
+                  title="Clear answer"
+                >
+                  <ClearIcon />
+                </IconButton>
+              )}
+            </Box>
 
             <FormControl component="fieldset" sx={{ width: "100%", mt: 2 }}>
               <RadioGroup
                 value={selectedAnswers[questions[currentQuestion].id] || ""}
-                onChange={(e) =>
-                  handleAnswer(questions[currentQuestion].id, e.target.value)
-                }
+                onChange={(e) => {
+                  const optionId = e.target.value;
+                  handleAnswer(questions[currentQuestion].id, optionId);
+                }}
               >
                 {questions[currentQuestion].options.map((option) => (
                   <FormControlLabel
@@ -481,7 +662,7 @@ const ExamSession = () => {
       {/* Snackbar for notifications */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={6000}
+        autoHideDuration={3000}
         onClose={handleSnackbarClose}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >

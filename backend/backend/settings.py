@@ -187,3 +187,6 @@ PASSWORD_RESET_TIMEOUT = 600  # 10 minutes in seconds
 
 FIREBASE_CREDENTIALS_PATH = BASE_DIR / "credentials" / "firebase-adminsdk.json"
 FRONTEND_URL = "http://localhost:5173"
+
+
+

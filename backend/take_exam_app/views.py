@@ -1,10 +1,10 @@
 from rest_framework import status, generics
 from rest_framework.response import Response
-from rest_framework.decorators import action
+from time import sleep
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
-from django.db import transaction
+from django.db import transaction, OperationalError
 from create_exam_app.models import Exam, Question, Option, ExamSession, UserAnswer
 from create_exam_app.serializers import (
     ExamDetailSerializer,
@@ -15,13 +15,11 @@ from create_exam_app.serializers import (
 from .serializers import ExamSessionDetailSerializer
 from rest_framework.views import APIView
 import google.generativeai as genai
-import openai
 from django.conf import settings
 import PyPDF2
 import json
 import re
 
-openai.api_key = settings.OPENAI_API_KEY
 genai.configure(api_key=settings.GEMINI_API_KEY)
 model = genai.GenerativeModel("gemini-1.5-flash")
 
@@ -222,6 +220,8 @@ class SubmitAnswerView(generics.CreateAPIView):
         session_id = request.data.get("session")
         question_id = request.data.get("question")
         option_id = request.data.get("selected_option")
+        # ans_status = request.data.get("status")
+        # print("answer status is:",ans_status)
 
         session = get_object_or_404(ExamSession, pk=session_id, user=request.user)
 
@@ -234,89 +234,136 @@ class SubmitAnswerView(generics.CreateAPIView):
 
         question = get_object_or_404(Question, pk=question_id, exam=session.exam)
 
-        if option_id:
-            option = get_object_or_404(Option, pk=option_id, question=question)
-            is_correct = option.is_correct
+        # Handle answer removal/deselection
+        if option_id is None:
+            # If option_id is None, it means the answer was cleared
+            answer, created = UserAnswer.objects.update_or_create(
+                session=session,
+                question=question,
+                defaults={
+                    "selected_option": None,
+                    "is_correct": None,
+                    "status": UserAnswer.AnswerStatus.UNANSWERED,
+                },
+            )
         else:
-            option = None
-            is_correct = None
-
-        # Create or update answer
-        answer, created = UserAnswer.objects.update_or_create(
-            session=session,
-            question=question,
-            defaults={"selected_option": option, "is_correct": is_correct},
-        )
+            option = get_object_or_404(Option, pk=option_id, question=question)
+            answer, created = UserAnswer.objects.update_or_create(
+                session=session,
+                question=question,
+                defaults={
+                    "selected_option": option,
+                    "is_correct": option.is_correct,
+                    "status": (
+                        UserAnswer.AnswerStatus.CORRECT
+                        if option.is_correct
+                        else UserAnswer.AnswerStatus.WRONG
+                    ),
+                },
+            )
 
         return Response(
-            {"status": "Answer recorded", "is_correct": is_correct},
+            {
+                "status": "Answer recorded",
+                "is_correct": answer.is_correct,
+                "answer_status": answer.get_status_display(),
+            },
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
+
 
 class CompleteExamView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ExamSessionSerializer
+    max_retries = 3
+    retry_delay = 0.5
 
     def update(self, request, *args, **kwargs):
         session_id = kwargs["pk"]
-        session = get_object_or_404(ExamSession, pk=session_id, user=request.user)
 
-        if session.is_completed:
-            return Response(
-                {"error": "This exam session has already been completed"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        for attempt in range(self.max_retries):
+            try:
+                with transaction.atomic():
+                    # Get session with select_for_update to prevent concurrent updates
+                    session = get_object_or_404(
+                        ExamSession.objects.select_for_update(nowait=True),
+                        pk=session_id,
+                        user=request.user,
+                    )
 
-        with transaction.atomic():
-            # Get all questions for this exam
-            all_questions = session.exam.questions.all()
-            total_questions = all_questions.count()
-            
-            # Get user's answers for this session
-            user_answers = session.answers.all()
-            answered_question_ids = set(answer.question_id for answer in user_answers)
-            
-            # Calculate correct and wrong answers
-            correct_answers = user_answers.filter(is_correct=True).count()
-            wrong_answers = user_answers.filter(is_correct=False).count()
-            
-            # Find unanswered questions (questions without any answer)
-            unanswered_questions = total_questions - len(answered_question_ids)
-            
-            # Calculate raw score
-            raw_score = correct_answers * session.exam.each_question_marks
+                    # Check if session is already completed
+                    if session.is_completed:
+                        serializer = self.get_serializer(session)
+                        return Response(serializer.data, status=status.HTTP_200_OK)
 
-            # Apply minus marking if enabled
-            if session.exam.minus_marking:
-                penalty = wrong_answers * session.exam.minus_marking_value
-                raw_score -= penalty
-                final_score = raw_score
-            else:
-                final_score = raw_score
+                    # Get all questions for this exam
+                    all_questions = session.exam.questions.all()
+                    total_questions = all_questions.count()
 
-            # Update session
-            session.is_completed = True
-            session.corrected_ans = correct_answers
-            session.wrong_ans = wrong_answers
-            session.unanswered = unanswered_questions
-            session.end_time = timezone.now()
-            session.score = max(0, final_score)
-            session.save()
+                    # Get user's answers for this session
+                    user_answers = session.answers.select_for_update().all()
+                    answered_question_ids = set(
+                        answer.question_id for answer in user_answers
+                    )
 
-            # Create UserAnswer records for unanswered questions
-            unanswered_question_ids = set(q.id for q in all_questions) - answered_question_ids
-            for question_id in unanswered_question_ids:
-                UserAnswer.objects.create(
-                    session=session,
-                    question_id=question_id,
-                    selected_option=None,
-                    is_correct=None
+                    # Calculate scores
+                    correct_answers = user_answers.filter(is_correct=True).count()
+                    wrong_answers = user_answers.filter(is_correct=False).count()
+                    unanswered_questions = total_questions - len(answered_question_ids)
+
+                    # Calculate final score
+                    raw_score = correct_answers * session.exam.each_question_marks
+                    if session.exam.minus_marking:
+                        penalty = wrong_answers * session.exam.minus_marking_value
+                        final_score = max(0, raw_score - penalty)
+                    else:
+                        final_score = raw_score
+
+                    # Update session
+                    session.is_completed = True
+                    session.corrected_ans = correct_answers
+                    session.wrong_ans = wrong_answers
+                    session.unanswered = unanswered_questions
+                    session.end_time = timezone.now()
+                    session.score = final_score
+                    session.save()
+
+                    # Handle unanswered questions
+                    unanswered_question_ids = (
+                        set(q.id for q in all_questions) - answered_question_ids
+                    )
+                    if unanswered_question_ids:
+                        UserAnswer.objects.bulk_create(
+                            [
+                                UserAnswer(
+                                    session=session,
+                                    question_id=question_id,
+                                    selected_option=None,
+                                    is_correct=None,
+                                )
+                                for question_id in unanswered_question_ids
+                            ]
+                        )
+
+                    serializer = self.get_serializer(session)
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+
+            except OperationalError as e:
+                if attempt == self.max_retries - 1:  # Last attempt
+                    return Response(
+                        {"error": "Database is temporarily busy. Please try again."},
+                        status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    )
+                sleep(self.retry_delay)  # Wait before retrying
+                continue
+
+            except Exception as e:
+                return Response(
+                    {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
 
-        serializer = self.get_serializer(session)
-        return Response(serializer.data)
 
-class UserExamSessionsView(generics.ListAPIView):
+class DisplayUserExamSessionsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ExamSessionDetailSerializer
 
