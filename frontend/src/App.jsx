@@ -13,6 +13,7 @@ import Footer from "./components/Footer";
 import Profile from "./pages/Profile";
 import ExamSession from "./pages/TakeExam/ExamSession";
 import PreviousExam from "./pages/PreviousExam";
+import ExamReview from "./pages/ExamReview";
 
 function App() {
   const LayoutWithNavbar = ({ children }) => (
@@ -47,6 +48,14 @@ function App() {
             element={
               <LayoutWithNavbar>
                 <PreviousExam />
+              </LayoutWithNavbar>
+            }
+          />
+          <Route
+            path="/exam-review/:sessionId"
+            element={
+              <LayoutWithNavbar>
+                <ExamReview />
               </LayoutWithNavbar>
             }
           />

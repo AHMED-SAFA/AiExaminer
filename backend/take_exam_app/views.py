@@ -372,3 +372,101 @@ class DisplayUserExamSessionsView(generics.ListAPIView):
             .filter(user_id=user_id, is_completed=True)
             .order_by("-end_time")
         )
+
+
+class ExamSessionDetailAPIView(generics.RetrieveAPIView):
+    """View to get detailed information about a completed exam session"""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, session_id):
+        # Get session and verify user has access
+        session = get_object_or_404(ExamSession, pk=session_id)
+
+        # Security check - only allow access to the user's own sessions
+        if session.user != request.user:
+            return Response(
+                {"error": "You don't have permission to view this exam session"},
+                status=403,
+            )
+
+        # Get exam details
+        exam = session.exam
+
+        # Get all questions for this exam with their options
+        questions = exam.questions.all().prefetch_related("options")
+
+        # Get user's answers for this session
+        user_answers = UserAnswer.objects.filter(session=session).select_related(
+            "selected_option"
+        )
+
+        # Format user answers as dictionary for easier lookup
+        answers_dict = {answer.question_id: answer for answer in user_answers}
+
+        # Build response data
+        questions_data = []
+        for question in questions:
+            # Get options with correct one marked
+            options_data = []
+            for option in question.options.all():
+                options_data.append(
+                    {
+                        "id": option.id,
+                        "text": option.option_text,
+                        "is_correct": option.is_correct,
+                    }
+                )
+
+            # Get user's answer for this question
+            user_answer = answers_dict.get(question.id)
+            selected_option_id = None
+            is_correct = None
+            status = "unanswered"
+
+            if user_answer and user_answer.selected_option:
+                selected_option_id = user_answer.selected_option.id
+                is_correct = user_answer.is_correct
+                status = user_answer.status
+
+            # Build question data
+            questions_data.append(
+                {
+                    "id": question.id,
+                    "text": question.question_text,
+                    "marks": question.marks,
+                    "explanation": question.explanation,
+                    "options": options_data,
+                    "user_answer": {
+                        "selected_option_id": selected_option_id,
+                        "is_correct": is_correct,
+                        "status": status,
+                    },
+                }
+            )
+
+        # Build the final response
+        response_data = {
+            "session": {
+                "id": session.id,
+                "start_time": session.start_time,
+                "end_time": session.end_time,
+                "score": session.score,
+                "correct_answers": session.corrected_ans,
+                "wrong_answers": session.wrong_ans,
+                "unanswered": session.unanswered,
+                "is_completed": session.is_completed,
+            },
+            "exam": {
+                "id": exam.id,
+                "title": exam.title,
+                "total_marks": exam.total_marks,
+                "each_question_marks": exam.each_question_marks,
+                "minus_marking": exam.minus_marking,
+                "minus_marking_value": exam.minus_marking_value,
+                "duration": exam.duration,
+            },
+            "questions": questions_data,
+        }
+
+        return Response(response_data)

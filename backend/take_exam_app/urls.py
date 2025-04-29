@@ -7,6 +7,7 @@ from .views import (
     ExamQuestionsView,
     ProcessExamPDFView,
     DisplayUserExamSessionsView,
+    ExamSessionDetailAPIView,
 )
 
 urlpatterns = [
@@ -27,5 +28,10 @@ urlpatterns = [
         "<int:exam_id>/questions/", ExamQuestionsView.as_view(), name="exam-questions"
     ),
     path("process-pdf/", ProcessExamPDFView.as_view(), name="process-pdf"),
+     path(
+        "session-detail/<int:session_id>/",
+        ExamSessionDetailAPIView.as_view(),
+        name="session-detail",
+    ),
  
 ]

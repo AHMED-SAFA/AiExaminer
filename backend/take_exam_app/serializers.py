@@ -17,6 +17,7 @@ class ExamSessionDetailSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'exam_title',
+            "start_time",
             "each_question_marks",
             "minus_marking_value",
             "output_pdf",
