@@ -43,7 +43,7 @@ function App() {
             }
           />
           <Route
-            path="/:userId/previous-exams"
+            path="/previous-exams"
             element={
               <LayoutWithNavbar>
                 <PreviousExam />

@@ -256,10 +256,7 @@ export default function Navbar() {
                 transition: "background-color 0.3s ease",
               }}
             >
-              <Link
-                // to={`/${userData.id}/previous-exams`}
-                style={{ textDecoration: "none" }}
-              >
+              <Link to={`/previous-exams`} style={{ textDecoration: "none" }}>
                 <Typography
                   variant="body2"
                   component="span"

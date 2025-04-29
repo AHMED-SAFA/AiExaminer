@@ -118,7 +118,6 @@ const ExamSession = () => {
             setTimeRemaining(adjustedTimeRemaining);
             setSessionStartTime(savedSession.sessionStartTime);
           } else {
-            // Fallback to exam duration if time data is corrupted
             setTimeRemaining(savedSession.exam.duration * 60);
             setSessionStartTime(new Date().toISOString());
           }
@@ -304,7 +303,6 @@ const ExamSession = () => {
     }
   };
 
-  // Explicitly clear an answer
   const clearAnswer = async (questionId) => {
     try {
       // Only proceed if there's an answer to clear

@@ -220,8 +220,6 @@ class SubmitAnswerView(generics.CreateAPIView):
         session_id = request.data.get("session")
         question_id = request.data.get("question")
         option_id = request.data.get("selected_option")
-        # ans_status = request.data.get("status")
-        # print("answer status is:",ans_status)
 
         session = get_object_or_404(ExamSession, pk=session_id, user=request.user)
 

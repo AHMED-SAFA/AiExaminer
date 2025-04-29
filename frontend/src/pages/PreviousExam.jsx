@@ -1,6 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
 import axios from "axios";
 import {
   Box,
@@ -23,14 +22,37 @@ import { useAuth } from "../context/AuthContext";
 
 function PreviousExam() {
   const [examSessions, setExamSessions] = useState([]);
+  const [userData, setUserData] = useState(null);
+  const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { token } = useAuth();
-  const { userId } = useParams();
 
   useEffect(() => {
-    fetchExamSessions();
+    fetchUserData();
+  }, []);
+
+  useEffect(() => {
+    if (userId) {
+      fetchExamSessions();
+    }
   }, [userId]);
+
+  const fetchUserData = async () => {
+    try {
+      const response = await axios.get("http://127.0.0.1:8000/api/auth/user/", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log("Fetched userData from home:", response.data);
+      setUserData(response.data);
+      setUserId(response.data.id);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      setError("Failed to fetch user data. Please try again later.");
+    }
+  };
 
   const fetchExamSessions = async () => {
     try {
