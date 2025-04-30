@@ -20,6 +20,8 @@ import google.generativeai as genai
 import openai
 from django.conf import settings
 import PyPDF2
+from datetime import datetime
+import pytz
 import io
 import os
 import json
@@ -119,26 +121,29 @@ class GenerateAnswerOptionsView(APIView):
             
             Respond with one of these exact options:
             - "questions_only" - if the content contains just questions without options or answers
-            - "with_options" - if questions have multiple choice options
-            - "with_answers" - if questions have answers but not formatted as options
+            - "questions_with_options" - if questions have multiple choice options
+            - "questions_with_answers" - if questions have answers but not formatted as options
+            - "questions_with_options_answers" - if questions have both answers and options
             
-            Return only one of these three values without any additional text."""
+            Return only one of these four values without any additional text."""
 
             response = model.generate_content(prompt)
             analysis = response.text.strip().lower()
 
             print(f"Content format analysis: {analysis}")
 
-            if "with_options" in analysis:
-                return "with_options"
-            elif "with_answers" in analysis:
-                return "with_answers"
+            if "questions_with_options_answers" in analysis:
+                return "questions_with_options_answers"
+            elif "questions_with_options" in analysis:
+                return "questions_with_options"
+            elif "questions_with_answers" in analysis:
+                return "questions_with_answers"
             else:
                 return "questions_only"
 
         except Exception as e:
             print(f"Error analyzing questions: {str(e)}")
-            return "questions_only"  # Default to questions only on error
+            return "questions_only"
 
     def extract_questions(self, exam_content):
         """Extract questions using Gemini with robust error handling"""
@@ -148,7 +153,8 @@ class GenerateAnswerOptionsView(APIView):
 
             prompt = f"""Extract all questions from this exam content.
             
-            The questions might be numbered or bulleted. Try to identify each distinct question.
+            The questions might be numbered or bulleted. Randomize the serials of questions.
+            Try to identify each distinct question.
             Format your response as strict JSON with this structure:
             {{
                 "questions": [
@@ -206,26 +212,27 @@ class GenerateAnswerOptionsView(APIView):
             print(f"Fallback extraction failed: {str(e)}")
             return []
 
-    
     def generate_options_and_answers(self, question_text, options_count):
         """Generate options using Gemini with improved prompt for reliable JSON"""
         try:
             prompt = f"""Create exactly {options_count} multiple choice options for 
-            this question with one correct answer.
+            this question with one correct answer. Randomize the correct options or 
+            answer.
             
             Question: {question_text}
 
             Format your response as strict JSON with this structure:
             {{
                 "options": [
-                    {{"text": "first option text", "is_correct": false}},
-                    {{"text": "second option text", "is_correct": true}},
+                    {{"text": "first option text", "is_correct": true or false}},
+                    {{"text": "second option text", "is_correct": true or false}},
                     ...
                 ]
             }}
             
             Requirements:
-            1. Exactly one option must be marked as correct (is_correct: true)
+            1. Exactly one option (Set randomly among {options_count} options)
+               must be marked as correct (is_correct: true)
             2. All other options must be marked as incorrect (is_correct: false)
             3. Include exactly {options_count} options total
             4. Return ONLY the JSON with no explanations or additional text
@@ -275,8 +282,14 @@ class GenerateAnswerOptionsView(APIView):
             return []
 
     def identify_correct_answers(self, question_text, options):
-        """Identify correct answer using Gemini"""
+                    
+        """Identify correct answer using Gemini with improved reliability"""
         try:
+            if not options:
+                print("No options provided to identify_correct_answers")
+                return 0
+
+            # Format options for the prompt
             options_text = "\n".join(
                 [f"{idx+1}. {opt['option_text']}" for idx, opt in enumerate(options)]
             )
@@ -286,7 +299,9 @@ class GenerateAnswerOptionsView(APIView):
             Options:
             {options_text}
 
-            Which option number is correct? Respond with ONLY the number (1, 2, 3, etc.)."""
+            Based on your knowledge, which option number contains the correct answer?
+            Respond with ONLY the number (1, 2, 3, etc.) of the correct option.
+            Do not include any explanation or additional text in your response."""
 
             response = model.generate_content(prompt)
             answer_text = response.text.strip()
@@ -299,15 +314,47 @@ class GenerateAnswerOptionsView(APIView):
                 correct_index = int(match.group()) - 1
                 if 0 <= correct_index < len(options):
                     return correct_index
+                else:
+                    print(f"Index {correct_index} out of range (0-{len(options)-1})")
+                    return 0
 
-            # Default to first option if parsing fails
+            # Alternate approach using likelihood scores from the model
+            scores = []
+            
+            for idx, opt in enumerate(options):
+                try:
+                    alt_prompt = f"""Question: {question_text}
+                    Is this answer correct? {opt['option_text']}
+                    Respond with only 'yes' or 'no'."""
+                    
+                    resp = model.generate_content(alt_prompt)
+                    resp_text = resp.text.strip().lower()
+                    
+                    if "yes" in resp_text:
+                        scores.append((idx, 1.0))
+                    elif "no" in resp_text:
+                        scores.append((idx, 0.0))
+                    else:
+                        scores.append((idx, 0.5))  # Uncertain
+                except Exception:
+                    scores.append((idx, 0.5))  # Default to uncertain on error
+                    
+            # Sort by confidence score
+            scores.sort(key=lambda x: x[1], reverse=True)
+            
+            if scores:
+                return scores[0][0]  # Return index with highest score
+
+            # Default to first option if all methods fail
+            print("All methods failed, defaulting to first option")
             return 0
+            
         except Exception as e:
             print(f"Error identifying correct answer: {str(e)}")
             return 0
 
     def generate_output_pdf(self, exam, questions):
-        """Generate a formatted PDF with questions and answers"""
+        """Generate a formatted PDF with questions and answers based on content format"""
         try:
             # Create output directory if it doesn't exist
             output_dir = os.path.join(settings.MEDIA_ROOT, "exam_outputs")
@@ -344,11 +391,25 @@ class GenerateAnswerOptionsView(APIView):
                 "CorrectOption", parent=option_style, textColor=colors.green
             )
 
+            answer_style = ParagraphStyle(
+                "Answer",
+                parent=styles["Normal"],
+                fontSize=11,
+                textColor=colors.blue,
+                leftIndent=20,
+                fontName="Helvetica-Bold",
+            )
+
             # Build content
             content = []
 
             # Add title
             content.append(Paragraph(f"Exam: {exam.title}", title_style))
+            content.append(Spacer(1, 12))
+
+            # Add exam format info
+            format_text = f"Format: {'Multiple Choice Exam' if exam.questions.first().has_options else 'Question and Answer Exam'}"
+            content.append(Paragraph(format_text, styles["Normal"]))
             content.append(Spacer(1, 12))
 
             # Add questions and options
@@ -359,16 +420,27 @@ class GenerateAnswerOptionsView(APIView):
                 )
                 content.append(Spacer(1, 6))
 
-                # Options
+                # Handle options if they exist
                 options = question.options.all()
-                for j, option in enumerate(options, 1):
-                    option_text = f"{chr(64+j)}. {option.option_text}"
-                    if option.is_correct:
-                        content.append(Paragraph(f"{option_text} ✓", correct_style))
-                    else:
-                        content.append(Paragraph(option_text, option_style))
+                if options.exists():
+                    for j, option in enumerate(options, 1):
+                        option_text = f"{chr(64+j)}. {option.option_text}"
+                        if option.is_correct:
+                            content.append(Paragraph(f"{option_text} ✓", correct_style))
+                        else:
+                            content.append(Paragraph(option_text, option_style))
 
+                # Add a space after each question
                 content.append(Spacer(1, 12))
+
+            # Add footer with generation info
+            generation_time = datetime.now(pytz.GMT).strftime("%Y-%m-%d %H:%M:%S GMT")
+            content.append(
+                Paragraph(f"Generated on: {generation_time}", styles["Normal"])
+            )
+            content.append(
+                Paragraph(f"Total Questions: {questions.count()}", styles["Normal"])
+            )
 
             # Build PDF
             doc.build(content)
@@ -376,17 +448,70 @@ class GenerateAnswerOptionsView(APIView):
             # Return relative path for database storage
             relative_path = f"exam_outputs/{output_filename}"
 
-            # Save the output PDF path to the exam model
-            exam.output_pdf = relative_path
-            exam.save()
-
             return relative_path
 
         except Exception as e:
             print(f"Error generating output PDF: {str(e)}")
             return None
 
+    def extract_questions_with_options(self, exam_content):
+        """Extract questions and their options using Gemini"""
+        try:
+            # Limit content but take enough to capture multiple questions with options
+            content_sample = exam_content[:10000]
+
+            prompt = f"""Extract all questions and all their multiple choice options from 
+            this exam content.
+            
+            Format your response as strict JSON with this structure:
+            {{
+                "questions": [
+                    {{
+                        "text": "Question text",
+                        "options": [
+                            {{"text": "Option 1"}},
+                            {{"text": "Option 2"}},
+                            {{"text": "Option 3"}},
+                            {{"text": "Option 4"}},
+                            ...
+                        ]
+                    }},
+                    ...
+                ]
+            }}
+            
+            Include ONLY the JSON in your response, with no additional text or markdown formatting.
+            
+            Content:
+            {content_sample}"""
+
+            response = model.generate_content(prompt)
+            response_text = response.text.strip()
+
+            # Debug the response
+            print(
+                f"Extract questions with options raw response: {response_text[:200]}..."
+            )
+
+            # Try to find JSON in the response (looking for { ... })
+            json_match = re.search(r"({.*})", response_text, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(1)
+                questions_data = json.loads(json_str)
+                return questions_data.get("questions", [])
+            else:
+                raise ValueError("Could not find valid JSON in the response")
+
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error: {str(e)}")
+            print(f"Response that couldn't be parsed: {response_text}")
+            return []
+        except Exception as e:
+            print(f"Error extracting questions with options: {str(e)}")
+            return []
+    
     def post(self, request):
+
         exam_id = request.data.get("exam_id")
 
         if not exam_id:
@@ -427,44 +552,67 @@ class GenerateAnswerOptionsView(APIView):
             # Initialize tracking variables
             questions_created = 0
             options_created = 0
+            answers_generated = 0
 
             with transaction.atomic():
-                # If no questions exist yet, extract them first
+                # Extract questions from content if they don't exist yet
                 if exam.questions.count() == 0:
-                    # Extract questions from content
-                    questions_data = self.extract_questions(exam_content)
+                    # For formats with options, use special extraction method
+                    if content_format in ["questions_with_options", "questions_with_options_answers"]:
+                        questions_data = self.extract_questions_with_options(exam_content)
+                        
+                        if not questions_data:
+                            # Fall back to regular extraction
+                            questions_data = self.extract_questions(exam_content)
+                            
+                        if not questions_data:
+                            raise ValueError("No questions could be extracted from the document")
+                            
+                        for question_data in questions_data:
+                            # Create question
+                            question = Question.objects.create(
+                                exam=exam,
+                                question_text=question_data["text"],
+                                has_options=True,
+                            )
+                            questions_created += 1
+                            
+                            # If options are provided in the extracted data, create them
+                            if "options" in question_data and question_data["options"]:
+                                for option_data in question_data["options"]:
+                                    Option.objects.create(
+                                        question=question,
+                                        option_text=option_data["text"],
+                                        is_correct=False,  # Will identify correct answer later
+                                        is_ai_generated=False,  # These are extracted, not AI-generated
+                                    )
+                                    options_created += 1
+                    else:
+                        # For non-option formats, use regular extraction
+                        questions_data = self.extract_questions(exam_content)
 
-                    if not questions_data:
-                        raise ValueError(
-                            "No questions could be extracted from the document"
-                        )
+                        if not questions_data:
+                            raise ValueError("No questions could be extracted from the document")
 
-                    for question_data in questions_data:
-                        # Create question
-                        Question.objects.create(
-                            exam=exam,
-                            question_text=question_data["text"],
-                            has_options=(content_format == "with_options"),
-                        )
-                        questions_created += 1
+                        for question_data in questions_data:
+                            # Create question
+                            Question.objects.create(
+                                exam=exam,
+                                question_text=question_data["text"],
+                                has_options=False,
+                            )
+                            questions_created += 1
 
-                # Process each question
+                # Handle each question based on content format
                 questions = exam.questions.all()
                 for question in questions:
-                    # Skip if question already has options and we detected options in the content
-                    if question.has_options and content_format == "with_options":
-                        continue
-
-                    # Generate options for questions
-                    if content_format != "with_options" or not question.has_options:
-                        # Generate options for the question
+                    # Case 1: If format is questions_only, generate both options and answers --ok
+                    if content_format == "questions_only":
                         options_data = self.generate_options_and_answers(
                             question.question_text, exam.mcq_options_count
                         )
-
-                        # If options were successfully generated
+                        
                         if options_data:
-                            # Create options in the database
                             for option_data in options_data:
                                 Option.objects.create(
                                     question=question,
@@ -473,21 +621,132 @@ class GenerateAnswerOptionsView(APIView):
                                     is_ai_generated=True,
                                 )
                                 options_created += 1
-
+                            
                             question.has_options = True
                             question.save()
-                    else:
-                        # If options exist but correct answer isn't identified
+                    
+                    # Case 2: If format is questions_with_answers, generate options that include 
+                    # the answer --ok
+                    elif content_format == "questions_with_answers":
+                        options_data = self.generate_options_and_answers(
+                            question.question_text, exam.mcq_options_count
+                        )
+                        
+                        if options_data:
+                            for option_data in options_data:
+                                Option.objects.create(
+                                    question=question,
+                                    option_text=option_data["text"],
+                                    is_correct=option_data["is_correct"],
+                                    is_ai_generated=True,
+                                )
+                                options_created += 1
+                            
+                            question.has_options = True
+                            question.save()
+                    
+                    # Case 3: If format is questions_with_options, ensure options are extracted 
+                    # and generate answers --ok
+                    elif content_format == "questions_with_options":
+                        options = list(question.options.all())
+                        
+                        # If no options exist yet, try to extract them directly for this question
+                        if not options:
+                            prompt = f"""Extract the multiple choice options for this question:
+                            
+                            Question: {question.question_text}
+                            
+                            Format your response as strict JSON with this structure:
+                            {{
+                                "options": [
+                                    {{"text": "Option 1"}},
+                                    {{"text": "Option 2"}},
+                                    {{"text": "Option 3"}},
+                                    {{"text": "Option 4"}},
+                                    ...
+                                ]
+                            }}
+                            
+                            Include ONLY the JSON in your response."""
+                            
+                            try:
+                                response = model.generate_content(prompt)
+                                response_text = response.text.strip()
+                                
+                                json_match = re.search(r"({.*})", response_text, re.DOTALL)
+                                if json_match:
+                                    json_str = json_match.group(1)
+                                    options_data = json.loads(json_str)
+                                    
+                                    # Create options in database
+                                    for option_data in options_data.get("options", []):
+                                        Option.objects.create(
+                                            question=question,
+                                            option_text=option_data["text"],
+                                            is_correct=False,  # Will identify correct answer later
+                                            is_ai_generated=False,
+                                        )
+                                        options_created += 1
+                                    
+                                    # Refresh options list
+                                    options = list(question.options.all())
+                                    question.has_options = True
+                                    question.save()
+                            except Exception as e:
+                                print(f"Error extracting options for question: {str(e)}")
+                        
+                        # Now identify correct answer for the options
+                        if options and not any(opt.is_correct for opt in options):
+                            # Use AI to identify the correct answer
+                            options_list = [{"option_text": opt.option_text} for opt in options]
+                            
+                            correct_index = self.identify_correct_answers(
+                                question.question_text,
+                                options_list,
+                            )
+                            
+                            # Mark the correct option
+                            if 0 <= correct_index < len(options):
+                                options[correct_index].is_correct = True
+                                options[correct_index].save()
+                                answers_generated += 1
+                            
+                        # If still no options, generate them along with answers
+                        if not options:
+                            print(f"No options found or extracted for question '{question.question_text}', generating new ones")
+                            options_data = self.generate_options_and_answers(
+                                question.question_text, exam.mcq_options_count
+                            )
+                            
+                            if options_data:
+                                for option_data in options_data:
+                                    Option.objects.create(
+                                        question=question,
+                                        option_text=option_data["text"],
+                                        is_correct=option_data["is_correct"],
+                                        is_ai_generated=True,
+                                    )
+                                    options_created += 1
+                                    if option_data["is_correct"]:
+                                        answers_generated += 1
+                                
+                                question.has_options = True
+                                question.save()
+                    
+                    # Case 4: If format is questions_with_options_answers, just save what's 
+                    # already there
+                    elif content_format == "questions_with_options_answers":
+                        # Double check that options and correct answers are properly saved
                         options = list(question.options.all())
                         if options and not any(opt.is_correct for opt in options):
                             correct_index = self.identify_correct_answers(
                                 question.question_text,
                                 [{"option_text": opt.option_text} for opt in options],
                             )
-                            # Mark the correct option
                             if 0 <= correct_index < len(options):
                                 options[correct_index].is_correct = True
                                 options[correct_index].save()
+                                answers_generated += 1
 
                 # Generate output PDF with questions and answers
                 output_pdf_path = self.generate_output_pdf(exam, questions)
@@ -498,16 +757,18 @@ class GenerateAnswerOptionsView(APIView):
                 exam.is_processed = True
                 exam.options_generated = True
                 exam.answers_generated = True
-                exam.output_pdf = output_pdf_path 
+                exam.output_pdf = output_pdf_path
                 exam.save()
 
             return Response(
                 {
-                    "message": "Successfully generated options and answers for the exam",
+                    "message": "Successfully processed exam content",
+                    "content_format": content_format,
                     "stats": {
                         "questions_processed": questions.count(),
                         "questions_created": questions_created,
                         "options_created": options_created,
+                        "answers_generated": answers_generated,
                         "output_pdf": output_pdf_path,
                     },
                 },
@@ -520,8 +781,6 @@ class GenerateAnswerOptionsView(APIView):
             exam.save()
 
             return Response(
-                {"error": f"Error generating options and answers: {str(e)}"},
+                {"error": f"Error processing exam content: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
-

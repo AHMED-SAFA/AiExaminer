@@ -12,6 +12,7 @@ urlpatterns = [
     path("api/profile/", include("profile_app.urls")),
     path("api/exam/", include("create_exam_app.urls")),
     path("api/take-exam/", include("take_exam_app.urls")),
+    path("api/exam-statistics/", include("statistics_app.urls")),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 ]
 

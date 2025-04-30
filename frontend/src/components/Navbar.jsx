@@ -283,7 +283,7 @@ export default function Navbar() {
                 transition: "background-color 0.3s ease",
               }}
             >
-              <Link to="/statistics" style={{ textDecoration: "none" }}>
+              <Link to="/exam-statistics" style={{ textDecoration: "none" }}>
                 <Typography
                   variant="body2"
                   component="span"
