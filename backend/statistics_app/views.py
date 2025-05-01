@@ -3,9 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Avg, Count, Case, When, IntegerField, F, Q, Sum
-from django.utils import timezone
-from datetime import timedelta
+from django.db.models import Avg
 import google.generativeai as genai
 from django.conf import settings
 from create_exam_app.models import Exam, ExamSession, UserAnswer
@@ -185,39 +183,77 @@ class GenerateAISuggestions(APIView):
 
         if not exam_id or not stats:
             return Response(
-                {"error": "Missing required data"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "Missing required data"}, status=status.HTTP_400_BAD_REQUEST,
             )
+
+        # Check sessions_count using dictionary access
+        if not stats.get('sessions_count', 0):
+            return Response(
+                {"error": "Participate in exam at least 1 time"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )  
+        
 
         exam = get_object_or_404(Exam, id=exam_id, created_by=request.user)
 
         try:
             # Format the statistics for the prompt
             prompt = f"""
-            As an exam analysis expert, please analyze the following exam statistics and provide 
-            actionable suggestions to improve the exam quality and student performance:
-            
-            Exam Title: {stats.get('title', 'Unknown')}
+            You are an expert in exam analysis and learning optimization. Your task is to 
+            analyze exam statistics and provide concise, data-driven recommendations to improve 
+            student performance and learning strategies.
+
+            Instructions:
+
+            Analyze the provided exam statistics.
+
+            Focus on key weaknesses (e.g., low correct answers, high unanswered questions, time management).
+
+            Provide 3-5 actionable suggestions—prioritizing the most impactful changes.
+
+            Keep responses short, clear, and practical (bullet points preferred).
+
+            Exam Data:
+
+            Title: {stats.get('title', 'Unknown')}
+
             Total Questions: {stats.get('question_count', 0)}
-            Number of Attempts: {stats.get('sessions_count', 0)}
-            Average Score: {stats.get('average_score', 0):.2f}%
+
+            Attempts: {stats.get('sessions_count', 0)}
+
+            Avg. Score: {stats.get('average_score', 0):.2f}%
+
             Completion Rate: {stats.get('completion_rate', 0):.2f}%
-            
+
             Answer Distribution:
-            - Average Correct Answers: {stats.get('average_correct', 0):.2f}
-            - Average Wrong Answers: {stats.get('average_wrong', 0):.2f}
-            - Average Unanswered: {stats.get('average_unanswered', 0):.2f}
-            
-            Question Statistics:
-            {self._format_question_stats(stats.get('question_stats', []))}
-            
-            Based on this data, please provide:
-            1. Insights about the exam difficulty level
-            2. Suggestions for improving question quality (identifying potentially problematic questions)
-            3. Recommendations for optimizing the exam duration
-            4. Tips for improving student performance
-            5. Any patterns or areas of concern that should be addressed
-            
-            Please keep your response concise and practical.
+
+            Correct: {stats.get('average_correct', 0):.2f}
+
+            Wrong: {stats.get('average_wrong', 0):.2f}
+
+            Unanswered: {stats.get('average_unanswered', 0):.2f}
+
+            Question Stats: {self._format_question_stats(stats.get('question_stats', []))}
+
+            Output Format:
+
+            Top Weaknesses: [Identify 1–2 key issues from the data, e.g., "High unanswered questions suggest time pressure."]
+
+            Performance Tips:
+
+            [Suggestion 1: Focus on weak topics, e.g., "Review [Topic X]—lowest correct answer rate."]
+
+            [Suggestion 2: Active learning, e.g., "Use practice quizzes for high-error questions."]
+
+            Time Management:
+
+            [Tip: e.g., "Simulate timed exams to improve pacing."]
+
+            Example Response (if data shows high unanswered questions):
+
+            Time Management:
+
+            example: Skip time-consuming questions first; return later.
             """
 
             # Generate suggestions with the AI model
@@ -228,7 +264,7 @@ class GenerateAISuggestions(APIView):
 
         except Exception as e:
             return Response(
-                {"error": f"Failed to generate suggestions: {str(e)}"},
+                {"error":  {str(e)}},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 

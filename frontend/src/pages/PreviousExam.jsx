@@ -93,7 +93,17 @@ function PreviousExam() {
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          mt: 4,
+          background:
+            "linear-gradient(135deg, rgb(14, 26, 78) 0%, rgb(183, 132, 235) 100%)",
+          minHeight: "100vh",
+          alignItems: "center",
+        }}
+      >
         <CircularProgress />
       </Box>
     );
@@ -113,7 +123,7 @@ function PreviousExam() {
         p: 3,
         minHeight: "100vh",
         background:
-          "linear-gradient(135deg, rgb(14, 26, 78) 0%, rgb(183, 132, 235) 100%)",
+          "linear-gradient(135deg, rgb(11, 36, 147) 0%, rgb(107, 190, 245) 100%)",
       }}
     >
       <Typography

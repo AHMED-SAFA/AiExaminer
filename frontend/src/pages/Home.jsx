@@ -285,7 +285,7 @@ const Home = () => {
       sx={{
         minHeight: "100vh",
         background:
-          "linear-gradient(135deg, rgb(14, 26, 78) 0%, rgb(183, 132, 235) 100%)",
+          "linear-gradient(135deg, rgb(11, 36, 147) 0%, rgb(107, 190, 245) 100%)",
         display: "flex",
         flexDirection: "column",
         padding: 4,
@@ -314,7 +314,7 @@ const Home = () => {
           sx={{
             backgroundColor: "rgba(255, 255, 255, 0.2)",
             backdropFilter: "blur(10px)",
-            color: "white",
+            color: "grey.900",
             "&:hover": {
               backgroundColor: "rgba(255, 255, 255, 0.3)",
             },

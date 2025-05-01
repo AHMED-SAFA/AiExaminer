@@ -1,585 +1,4 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-// import React, { useState, useEffect } from 'react';
-// import axios from 'axios';
-// import {
-//   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-//   PieChart, Pie, Cell, LineChart, Line
-// } from 'recharts';
-// import { AlertCircle, CheckCircle, XCircle, HelpCircle, ChevronDown, ChevronUp, BookOpen, Award, Loader } from 'lucide-react';
-
-// const StatisticsPage = () => {
-//   const [loading, setLoading] = useState(true);
-//   const [exams, setExams] = useState([]);
-//   const [selectedExam, setSelectedExam] = useState(null);
-//   const [examSessions, setExamSessions] = useState([]);
-//   const [suggestions, setSuggestions] = useState("");
-//   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-//   const [statsType, setStatsType] = useState('overall');
-//   const [expandedExam, setExpandedExam] = useState(null);
-
-//   // Colors for charts
-//   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
-
-//   useEffect(() => {
-//     // Fetch all exams when component mounts
-//     fetchExams();
-//   }, []);
-
-//   useEffect(() => {
-//     // Fetch exam sessions when a specific exam is selected
-//     if (selectedExam) {
-//       fetchExamSessions(selectedExam);
-//     }
-//   }, [selectedExam]);
-
-//   const fetchExams = async () => {
-//     try {
-//       setLoading(true);
-//       const response = await axios.get('/api/exams/');
-//       setExams(response.data);
-//       setLoading(false);
-//     } catch (error) {
-//       console.error('Error fetching exams:', error);
-//       setLoading(false);
-//     }
-//   };
-
-//   const fetchExamSessions = async (examId) => {
-//     try {
-//       setLoading(true);
-//       const response = await axios.get(`/api/exams/${examId}/sessions/`);
-//       setExamSessions(response.data);
-//       setLoading(false);
-//     } catch (error) {
-//       console.error('Error fetching exam sessions:', error);
-//       setLoading(false);
-//     }
-//   };
-
-//   const generateSuggestions = async (examId) => {
-//     try {
-//       setLoadingSuggestions(true);
-//       const response = await axios.post(`/api/exams/${examId}/generate-suggestions/`);
-//       setSuggestions(response.data.suggestions);
-//       setLoadingSuggestions(false);
-//     } catch (error) {
-//       console.error('Error generating suggestions:', error);
-//       setLoadingSuggestions(false);
-//       setSuggestions("Failed to generate suggestions. Please try again later.");
-//     }
-//   };
-
-//   const toggleExamDetails = (examId) => {
-//     if (expandedExam === examId) {
-//       setExpandedExam(null);
-//     } else {
-//       setExpandedExam(examId);
-//       setSelectedExam(examId);
-//     }
-//   };
-
-//   // Format date for better display
-//   const formatDate = (dateString) => {
-//     const date = new Date(dateString);
-//     return date.toLocaleDateString('en-US', {
-//       year: 'numeric',
-//       month: 'short',
-//       day: 'numeric'
-//     });
-//   };
-
-//   // Calculate overall statistics across all exams
-//   const calculateOverallStats = () => {
-//     if (exams.length === 0) return null;
-
-//     const totalSessions = exams.reduce((acc, exam) => {
-//       return acc + (exam.sessions ? exam.sessions.length : 0);
-//     }, 0);
-
-//     const totalCompletedSessions = exams.reduce((acc, exam) => {
-//       return acc + (exam.sessions ? exam.sessions.filter(s => s.is_completed).length : 0);
-//     }, 0);
-
-//     const averageScore = exams.reduce((acc, exam) => {
-//       const examScores = exam.sessions ? exam.sessions.filter(s => s.score !== null).map(s => s.score) : [];
-//       const examAvg = examScores.length > 0 ? examScores.reduce((sum, score) => sum + score, 0) / examScores.length : 0;
-//       return acc + examAvg;
-//     }, 0) / (exams.length || 1);
-
-//     return {
-//       totalExams: exams.length,
-//       totalSessions,
-//       totalCompletedSessions,
-//       averageScore: averageScore.toFixed(2),
-//     };
-//   };
-
-//   // Prepare data for BarChart displaying exam scores
-//   const prepareScoreDistributionData = () => {
-//     if (!examSessions || examSessions.length === 0) return [];
-
-//     const scoreRanges = [
-//       { name: '0-20%', count: 0 },
-//       { name: '21-40%', count: 0 },
-//       { name: '41-60%', count: 0 },
-//       { name: '61-80%', count: 0 },
-//       { name: '81-100%', count: 0 },
-//     ];
-
-//     examSessions.forEach(session => {
-//       if (session.score !== null) {
-//         const scorePercentage = (session.score / selectedExam.total_marks) * 100;
-//         if (scorePercentage <= 20) scoreRanges[0].count++;
-//         else if (scorePercentage <= 40) scoreRanges[1].count++;
-//         else if (scorePercentage <= 60) scoreRanges[2].count++;
-//         else if (scorePercentage <= 80) scoreRanges[3].count++;
-//         else scoreRanges[4].count++;
-//       }
-//     });
-
-//     return scoreRanges;
-//   };
-
-//   // Prepare data for PieChart showing answer distribution
-//   const prepareAnswerDistributionData = () => {
-//     if (!examSessions || examSessions.length === 0) return [];
-
-//     let totalCorrect = 0;
-//     let totalWrong = 0;
-//     let totalUnanswered = 0;
-
-//     examSessions.forEach(session => {
-//       totalCorrect += session.corrected_ans || 0;
-//       totalWrong += session.wrong_ans || 0;
-//       totalUnanswered += session.unanswered || 0;
-//     });
-
-//     return [
-//       { name: 'Correct', value: totalCorrect },
-//       { name: 'Wrong', value: totalWrong },
-//       { name: 'Unanswered', value: totalUnanswered },
-//     ];
-//   };
-
-//   // Prepare data for line chart showing performance over time
-//   const preparePerformanceOverTimeData = () => {
-//     if (!examSessions || examSessions.length === 0) return [];
-
-//     // Sort sessions by start time
-//     const sortedSessions = [...examSessions].sort((a, b) =>
-//       new Date(a.start_time) - new Date(b.start_time)
-//     );
-
-//     return sortedSessions.map(session => ({
-//       date: formatDate(session.start_time),
-//       score: session.score || 0,
-//       username: session.user.username,
-//     }));
-//   };
-
-//   // Prepare data for overall exam comparison
-//   const prepareExamComparisonData = () => {
-//     return exams.map(exam => {
-//       const sessions = exam.sessions || [];
-//       const completedSessions = sessions.filter(s => s.is_completed);
-//       const averageScore = completedSessions.length > 0 ?
-//         completedSessions.reduce((sum, s) => sum + (s.score || 0), 0) / completedSessions.length :
-//         0;
-
-//       return {
-//         name: exam.title.length > 15 ? exam.title.substring(0, 15) + '...' : exam.title,
-//         sessions: sessions.length,
-//         avgScore: averageScore.toFixed(1),
-//       };
-//     });
-//   };
-
-//   const overallStats = calculateOverallStats();
-
-//   return (
-//     <div className="p-6 max-w-7xl mx-auto">
-//       <h1 className="text-3xl font-bold mb-6 text-gray-800">Exam Statistics Dashboard</h1>
-
-//       {/* Stats Type Selector */}
-//       <div className="mb-6 flex space-x-4">
-//         <button
-//           className={`px-4 py-2 rounded-md ${statsType === 'overall' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-//           onClick={() => setStatsType('overall')}
-//         >
-//           Overall Statistics
-//         </button>
-//         <button
-//           className={`px-4 py-2 rounded-md ${statsType === 'individual' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-//           onClick={() => setStatsType('individual')}
-//         >
-//           Individual Exam Analysis
-//         </button>
-//       </div>
-
-//       {loading ? (
-//         <div className="flex justify-center items-center h-64">
-//           <Loader className="animate-spin h-8 w-8 text-blue-600" />
-//           <span className="ml-2 text-lg">Loading statistics...</span>
-//         </div>
-//       ) : (
-//         <>
-//           {statsType === 'overall' ? (
-//             <div className="space-y-8">
-//               {/* Overview Cards */}
-//               {overallStats && (
-//                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-//                   <div className="bg-white p-4 rounded-lg shadow flex items-center space-x-4">
-//                     <div className="bg-blue-100 p-3 rounded-full">
-//                       <BookOpen className="text-blue-600 h-6 w-6" />
-//                     </div>
-//                     <div>
-//                       <p className="text-sm text-gray-600">Total Exams</p>
-//                       <p className="text-2xl font-bold">{overallStats.totalExams}</p>
-//                     </div>
-//                   </div>
-//                   <div className="bg-white p-4 rounded-lg shadow flex items-center space-x-4">
-//                     <div className="bg-green-100 p-3 rounded-full">
-//                       <Award className="text-green-600 h-6 w-6" />
-//                     </div>
-//                     <div>
-//                       <p className="text-sm text-gray-600">Exam Sessions</p>
-//                       <p className="text-2xl font-bold">{overallStats.totalSessions}</p>
-//                     </div>
-//                   </div>
-//                   <div className="bg-white p-4 rounded-lg shadow flex items-center space-x-4">
-//                     <div className="bg-purple-100 p-3 rounded-full">
-//                       <CheckCircle className="text-purple-600 h-6 w-6" />
-//                     </div>
-//                     <div>
-//                       <p className="text-sm text-gray-600">Completed</p>
-//                       <p className="text-2xl font-bold">{overallStats.totalCompletedSessions}</p>
-//                     </div>
-//                   </div>
-//                   <div className="bg-white p-4 rounded-lg shadow flex items-center space-x-4">
-//                     <div className="bg-yellow-100 p-3 rounded-full">
-//                       <AlertCircle className="text-yellow-600 h-6 w-6" />
-//                     </div>
-//                     <div>
-//                       <p className="text-sm text-gray-600">Avg. Score</p>
-//                       <p className="text-2xl font-bold">{overallStats.averageScore}%</p>
-//                     </div>
-//                   </div>
-//                 </div>
-//               )}
-
-//               {/* Exam Performance Comparison Chart */}
-//               <div className="bg-white p-6 rounded-lg shadow mb-8">
-//                 <h2 className="text-xl font-semibold mb-4">Exam Performance Comparison</h2>
-//                 <ResponsiveContainer width="100%" height={300}>
-//                   <BarChart
-//                     data={prepareExamComparisonData()}
-//                     margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
-//                   >
-//                     <CartesianGrid strokeDasharray="3 3" />
-//                     <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
-//                     <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
-//                     <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
-//                     <Tooltip />
-//                     <Legend />
-//                     <Bar yAxisId="left" dataKey="sessions" name="Number of Sessions" fill="#8884d8" />
-//                     <Bar yAxisId="right" dataKey="avgScore" name="Average Score (%)" fill="#82ca9d" />
-//                   </BarChart>
-//                 </ResponsiveContainer>
-//               </div>
-
-//               {/* List of all exams */}
-//               <div className="bg-white p-6 rounded-lg shadow">
-//                 <h2 className="text-xl font-semibold mb-4">All Exams</h2>
-//                 <ul className="divide-y divide-gray-200">
-//                   {exams.map((exam) => (
-//                     <li key={exam.id} className="py-4">
-//                       <div
-//                         className="flex justify-between items-center cursor-pointer"
-//                         onClick={() => toggleExamDetails(exam.id)}
-//                       >
-//                         <div>
-//                           <h3 className="text-lg font-medium">{exam.title}</h3>
-//                           <p className="text-sm text-gray-500">Created: {formatDate(exam.created_at)}</p>
-//                         </div>
-//                         <div className="flex items-center">
-//                           <span className="mr-4 text-sm text-gray-600">
-//                             {exam.sessions ? exam.sessions.length : 0} sessions
-//                           </span>
-//                           {expandedExam === exam.id ? (
-//                             <ChevronUp className="h-5 w-5 text-gray-500" />
-//                           ) : (
-//                             <ChevronDown className="h-5 w-5 text-gray-500" />
-//                           )}
-//                         </div>
-//                       </div>
-
-//                       {expandedExam === exam.id && (
-//                         <div className="mt-4 pl-4 border-l-2 border-blue-200">
-//                           <p><span className="font-medium">Total Marks:</span> {exam.total_marks}</p>
-//                           <p><span className="font-medium">Duration:</span> {exam.duration} minutes</p>
-//                           <p><span className="font-medium">Questions:</span> {exam.question_count || 'N/A'}</p>
-//                           <button
-//                             className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-//                             onClick={(e) => {
-//                               e.stopPropagation();
-//                               setSelectedExam(exam);
-//                               setStatsType('individual');
-//                             }}
-//                           >
-//                             View Detailed Statistics
-//                           </button>
-//                         </div>
-//                       )}
-//                     </li>
-//                   ))}
-//                 </ul>
-//               </div>
-//             </div>
-//           ) : (
-//             <div>
-//               {/* Individual Exam Analysis */}
-//               <div className="mb-6">
-//                 <label htmlFor="exam-select" className="block text-sm font-medium text-gray-700 mb-1">
-//                   Select an Exam:
-//                 </label>
-//                 <select
-//                   id="exam-select"
-//                   className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-//                   value={selectedExam?.id || ''}
-//                   onChange={(e) => {
-//                     const examId = e.target.value;
-//                     const exam = exams.find(ex => ex.id.toString() === examId);
-//                     setSelectedExam(exam);
-//                   }}
-//                 >
-//                   <option value="">-- Select an Exam --</option>
-//                   {exams.map((exam) => (
-//                     <option key={exam.id} value={exam.id}>{exam.title}</option>
-//                   ))}
-//                 </select>
-//               </div>
-
-//               {selectedExam ? (
-//                 <div className="space-y-8">
-//                   <div className="bg-white p-6 rounded-lg shadow">
-//                     <h2 className="text-xl font-semibold mb-4">{selectedExam.title} - Overview</h2>
-//                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-//                       <div className="bg-gray-50 p-4 rounded">
-//                         <p className="text-sm text-gray-600">Total Sessions</p>
-//                         <p className="text-xl font-bold">{examSessions.length}</p>
-//                       </div>
-//                       <div className="bg-gray-50 p-4 rounded">
-//                         <p className="text-sm text-gray-600">Completed</p>
-//                         <p className="text-xl font-bold">
-//                           {examSessions.filter(s => s.is_completed).length}
-//                         </p>
-//                       </div>
-//                       <div className="bg-gray-50 p-4 rounded">
-//                         <p className="text-sm text-gray-600">Avg. Score</p>
-//                         <p className="text-xl font-bold">
-//                           {examSessions.length > 0 ?
-//                             (examSessions.reduce((sum, s) => sum + (s.score || 0), 0) / examSessions.length).toFixed(2) :
-//                             'N/A'}
-//                         </p>
-//                       </div>
-//                       <div className="bg-gray-50 p-4 rounded">
-//                         <p className="text-sm text-gray-600">Questions</p>
-//                         <p className="text-xl font-bold">{selectedExam.question_count || 'N/A'}</p>
-//                       </div>
-//                     </div>
-
-//                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-//                       {/* Score Distribution Chart */}
-//                       <div>
-//                         <h3 className="text-lg font-medium mb-3">Score Distribution</h3>
-//                         <ResponsiveContainer width="100%" height={300}>
-//                           <BarChart
-//                             data={prepareScoreDistributionData()}
-//                             margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-//                           >
-//                             <CartesianGrid strokeDasharray="3 3" />
-//                             <XAxis dataKey="name" />
-//                             <YAxis />
-//                             <Tooltip />
-//                             <Legend />
-//                             <Bar dataKey="count" name="Students" fill="#8884d8" />
-//                           </BarChart>
-//                         </ResponsiveContainer>
-//                       </div>
-
-//                       {/* Answer Distribution Pie Chart */}
-//                       <div>
-//                         <h3 className="text-lg font-medium mb-3">Answer Distribution</h3>
-//                         <ResponsiveContainer width="100%" height={300}>
-//                           <PieChart>
-//                             <Pie
-//                               data={prepareAnswerDistributionData()}
-//                               cx="50%"
-//                               cy="50%"
-//                               labelLine={false}
-//                               outerRadius={100}
-//                               fill="#8884d8"
-//                               dataKey="value"
-//                               label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
-//                             >
-//                               {prepareAnswerDistributionData().map((entry, index) => (
-//                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-//                               ))}
-//                             </Pie>
-//                             <Tooltip />
-//                             <Legend />
-//                           </PieChart>
-//                         </ResponsiveContainer>
-//                       </div>
-//                     </div>
-//                   </div>
-
-//                   {/* Performance Over Time */}
-//                   <div className="bg-white p-6 rounded-lg shadow">
-//                     <h2 className="text-xl font-semibold mb-4">Performance Trend</h2>
-//                     <ResponsiveContainer width="100%" height={300}>
-//                       <LineChart
-//                         data={preparePerformanceOverTimeData()}
-//                         margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-//                       >
-//                         <CartesianGrid strokeDasharray="3 3" />
-//                         <XAxis dataKey="date" />
-//                         <YAxis />
-//                         <Tooltip />
-//                         <Legend />
-//                         <Line type="monotone" dataKey="score" stroke="#8884d8" activeDot={{ r: 8 }} />
-//                       </LineChart>
-//                     </ResponsiveContainer>
-//                   </div>
-
-//                   {/* AI Generated Suggestions */}
-//                   <div className="bg-white p-6 rounded-lg shadow">
-//                     <div className="flex justify-between items-center mb-4">
-//                       <h2 className="text-xl font-semibold">AI-Generated Insights</h2>
-//                       <button
-//                         className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center space-x-2"
-//                         onClick={() => generateSuggestions(selectedExam.id)}
-//                         disabled={loadingSuggestions}
-//                       >
-//                         {loadingSuggestions ? (
-//                           <>
-//                             <Loader className="animate-spin h-4 w-4" />
-//                             <span>Generating...</span>
-//                           </>
-//                         ) : (
-//                           <span>Generate Insights</span>
-//                         )}
-//                       </button>
-//                     </div>
-
-//                     <div className="bg-gray-50 p-4 rounded min-h-40">
-//                       {suggestions ? (
-//                         <div className="prose max-w-none">
-//                           {suggestions.split('\n').map((paragraph, idx) => (
-//                             <p key={idx}>{paragraph}</p>
-//                           ))}
-//                         </div>
-//                       ) : (
-//                         <p className="text-gray-500 italic">
-//                           Click "Generate Insights" to get AI-powered analysis of this exam's performance data.
-//                         </p>
-//                       )}
-//                     </div>
-//                   </div>
-
-//                   {/* Session Details */}
-//                   <div className="bg-white p-6 rounded-lg shadow">
-//                     <h2 className="text-xl font-semibold mb-4">Detailed Session Results</h2>
-//                     {examSessions.length > 0 ? (
-//                       <div className="overflow-x-auto">
-//                         <table className="min-w-full divide-y divide-gray-200">
-//                           <thead className="bg-gray-50">
-//                             <tr>
-//                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-//                                 User
-//                               </th>
-//                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-//                                 Date
-//                               </th>
-//                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-//                                 Score
-//                               </th>
-//                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-//                                 Correct
-//                               </th>
-//                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-//                                 Wrong
-//                               </th>
-//                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-//                                 Unanswered
-//                               </th>
-//                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-//                                 Status
-//                               </th>
-//                             </tr>
-//                           </thead>
-//                           <tbody className="bg-white divide-y divide-gray-200">
-//                             {examSessions.map((session) => (
-//                               <tr key={session.id}>
-//                                 <td className="px-6 py-4 whitespace-nowrap">
-//                                   {session.user.username}
-//                                 </td>
-//                                 <td className="px-6 py-4 whitespace-nowrap">
-//                                   {formatDate(session.start_time)}
-//                                 </td>
-//                                 <td className="px-6 py-4 whitespace-nowrap">
-//                                   {session.score !== null ? session.score : 'N/A'}
-//                                 </td>
-//                                 <td className="px-6 py-4 whitespace-nowrap">
-//                                   <span className="flex items-center">
-//                                     <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
-//                                     {session.corrected_ans || 0}
-//                                   </span>
-//                                 </td>
-//                                 <td className="px-6 py-4 whitespace-nowrap">
-//                                   <span className="flex items-center">
-//                                     <XCircle className="h-4 w-4 text-red-500 mr-1" />
-//                                     {session.wrong_ans || 0}
-//                                   </span>
-//                                 </td>
-//                                 <td className="px-6 py-4 whitespace-nowrap">
-//                                   <span className="flex items-center">
-//                                     <HelpCircle className="h-4 w-4 text-gray-500 mr-1" />
-//                                     {session.unanswered || 0}
-//                                   </span>
-//                                 </td>
-//                                 <td className="px-6 py-4 whitespace-nowrap">
-//                                   <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-//                                     session.is_completed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-//                                   }`}>
-//                                     {session.is_completed ? 'Completed' : 'In Progress'}
-//                                   </span>
-//                                 </td>
-//                               </tr>
-//                             ))}
-//                           </tbody>
-//                         </table>
-//                       </div>
-//                     ) : (
-//                       <p className="text-gray-500 italic">No sessions found for this exam.</p>
-//                     )}
-//                   </div>
-//                 </div>
-//               ) : (
-//                 <div className="bg-white p-6 rounded-lg shadow text-center">
-//                   <p className="text-gray-600">Please select an exam to view detailed statistics.</p>
-//                 </div>
-//               )}
-//             </div>
-//           )}
-//         </>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default StatisticsPage;
-
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -596,15 +15,77 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
 } from "recharts";
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Grid,
+  Button,
+  Chip,
+  CircularProgress,
+  Tabs,
+  Tab,
+  Divider,
+  Paper,
+  IconButton,
+  useTheme,
+  Switch,
+  FormControlLabel,
+  Avatar,
+  Alert,
+  Snackbar,
+  Tooltip as MuiTooltip,
+} from "@mui/material";
+// Replace this import section:
+import {
+  BarChart as BarChartIcon,
+  ShowChart as LineChartIcon,
+  DonutLarge as PieChartIcon,
+  Lightbulb as LightbulbIcon,
+  ArrowBack as ArrowBackIcon,
+  Refresh as RefreshIcon,
+  Warning as WarningIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  Info as InfoIcon,
+} from "@mui/icons-material";
+import { RadarOutlined as RadarIcon } from "@mui/icons-material";
+import { HelpCircle, AlertTriangle } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { ArrowLeft, BarChart3, HelpCircle, AlertTriangle } from "lucide-react";
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
+// Custom color palette
+const CHART_COLORS = {
+  primary: "#6366F1", // Indigo
+  secondary: "#10B981", // Emerald
+  tertiary: "#F59E0B", // Amber
+  quaternary: "#EC4899", // Pink
+  quinary: "#8B5CF6", // Purple
+  correct: "#22C55E", // Green
+  wrong: "#EF4444", // Red
+  neutral: "#6B7280", // Gray
+  unattempted: "#94A3B8", // Slate
+};
+
+// Chart color array for consistency
+const COLORS = [
+  CHART_COLORS.primary,
+  CHART_COLORS.secondary,
+  CHART_COLORS.tertiary,
+  CHART_COLORS.quaternary,
+  CHART_COLORS.quinary,
+];
 
 function StatisticsPage() {
-  const [loading, setLoading] = useState(true);
+  const theme = useTheme();
   const { token } = useAuth();
+  const [loading, setLoading] = useState(true);
   const [exams, setExams] = useState([]);
   const [selectedExam, setSelectedExam] = useState(null);
   const [aiSuggestions, setAiSuggestions] = useState("");
@@ -613,10 +94,18 @@ function StatisticsPage() {
   const [chartType, setChartType] = useState("bar");
   const [examStatistics, setExamStatistics] = useState(null);
   const [error, setError] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "info",
+  });
+  const [showRadarChart, setShowRadarChart] = useState(false);
 
   useEffect(() => {
     fetchExams();
-  }, []);
+  }, [refreshTrigger]);
 
   const fetchExams = async () => {
     setLoading(true);
@@ -629,14 +118,15 @@ function StatisticsPage() {
           },
         }
       );
-      console.log(
-        "response form frtch exam from StatisticsPage",
-        response.data
-      );
       setExams(response.data);
     } catch (err) {
       setError("Failed to load exams data");
       console.error("Error fetching exams data:", err);
+      setSnackbar({
+        open: true,
+        message: "Failed to load exam data. Please try again.",
+        severity: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -646,6 +136,7 @@ function StatisticsPage() {
     setSelectedExam(examId);
     setViewType("individual");
     setChartType("bar");
+    setSelectedTab(0);
 
     try {
       // Fetch detailed statistics for the selected exam
@@ -657,11 +148,15 @@ function StatisticsPage() {
           },
         }
       );
-      console.log("response from handleExamSelect:", response.data);
       setExamStatistics(response.data);
     } catch (err) {
       setError("Failed to load individual exam statistics");
       console.error("Error fetching exam statistics:", err);
+      setSnackbar({
+        open: true,
+        message: "Failed to load exam statistics. Please try again.",
+        severity: "error",
+      });
     }
   };
 
@@ -691,11 +186,31 @@ function StatisticsPage() {
       totalExams;
 
     return [
-      { name: "Total Exams", value: totalExams },
-      { name: "Total Questions", value: totalQuestions },
-      { name: "Total Attempts", value: totalSessions },
-      { name: "Avg Score (%)", value: avgScore.toFixed(2) },
-      { name: "Completion Rate (%)", value: completionRate.toFixed(2) },
+      {
+        name: "Total Exams",
+        value: totalExams,
+        color: CHART_COLORS.primary,
+      },
+      {
+        name: "Total Questions",
+        value: totalQuestions,
+        color: CHART_COLORS.secondary,
+      },
+      {
+        name: "Total Attempts",
+        value: totalSessions,
+        color: CHART_COLORS.tertiary,
+      },
+      {
+        name: "Avg Score",
+        value: `${avgScore.toFixed(2)}%`,
+        color: CHART_COLORS.quaternary,
+      },
+      {
+        name: "Completion Rate",
+        value: `${completionRate.toFixed(2)}%`,
+        color: CHART_COLORS.quinary,
+      },
     ];
   };
 
@@ -717,9 +232,21 @@ function StatisticsPage() {
     if (!examStatistics) return [];
 
     return [
-      { name: "Correct", value: examStatistics.average_correct || 0 },
-      { name: "Wrong", value: examStatistics.average_wrong || 0 },
-      { name: "Unanswered", value: examStatistics.average_unanswered || 0 },
+      {
+        name: "Correct",
+        value: examStatistics.average_correct || 0,
+        color: CHART_COLORS.correct,
+      },
+      {
+        name: "Wrong",
+        value: examStatistics.average_wrong || 0,
+        color: CHART_COLORS.wrong,
+      },
+      {
+        name: "Unanswered",
+        value: examStatistics.average_unanswered || 0,
+        color: CHART_COLORS.unattempted,
+      },
     ];
   };
 
@@ -742,387 +269,998 @@ function StatisticsPage() {
     }));
   };
 
+  const getRadarChartData = () => {
+    if (!examStatistics || !examStatistics.question_stats) return [];
+
+    // Get difficulty data for radar chart
+    const data = [];
+
+    // For simplicity, let's calculate some meaningful metrics for the radar chart
+    const metrics = {
+      avgScore: examStatistics.average_score / 100 || 0,
+      completionRate: examStatistics.completion_rate / 100 || 0,
+      correctRatio:
+        examStatistics.average_correct / examStatistics.question_count || 0,
+      attemptsPerQuestion:
+        examStatistics.sessions_count / examStatistics.question_count || 0,
+      timingFactor: 0.65, // Placeholder value
+    };
+
+    data.push({
+      subject: "Score",
+      value: metrics.avgScore,
+      fullMark: 1,
+    });
+
+    data.push({
+      subject: "Completion",
+      value: metrics.completionRate,
+      fullMark: 1,
+    });
+
+    data.push({
+      subject: "Correct Rate",
+      value: metrics.correctRatio,
+      fullMark: 1,
+    });
+
+    data.push({
+      subject: "Student Engagement",
+      value: Math.min(metrics.attemptsPerQuestion / 5, 1), // Normalize to 0-1
+      fullMark: 1,
+    });
+
+    data.push({
+      subject: "Time Efficiency",
+      value: metrics.timingFactor,
+      fullMark: 1,
+    });
+
+    return data;
+  };
+
   const generateAiSuggestions = async () => {
     if (!examStatistics) return;
-
     setSuggestionsLoading(true);
+    setAiSuggestions("");
+
     try {
-      // Call the backend API that interfaces with Gemini
       const response = await axios.post(
         "http://127.0.0.1:8000/api/exam-statistics/generate-suggestions/",
+        {
+          examId: selectedExam,
+          stats: examStatistics,
+        },
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-          examId: selectedExam,
-          stats: examStatistics,
         }
       );
-      console.log("response from generateAiSuggestions:", response.data);
 
       setAiSuggestions(response.data.suggestions);
+      setSnackbar({
+        open: true,
+        message: "AI insights generated successfully!",
+        severity: "success",
+      });
     } catch (err) {
-      setAiSuggestions(
-        "Failed to generate AI suggestions. Please try again later."
-      );
       console.error("Error generating AI suggestions:", err);
+
+      // Handle specific error messages from backend
+      if (err.response?.data?.error) {
+        setAiSuggestions(`${err.response.data.error}`);
+      } else {
+        setAiSuggestions(
+          "Failed to generate AI suggestions. Please try again later."
+        );
+      }
+
+      setSnackbar({
+        open: true,
+        message: "Failed to generate AI insights. Please try again.",
+        severity: "error",
+      });
     } finally {
       setSuggestionsLoading(false);
     }
   };
 
+  const handleTabChange = (event, newValue) => {
+    setSelectedTab(newValue);
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="text-lg font-medium">Loading statistics...</div>
-      </div>
+      <Box className="flex justify-center items-center h-screen">
+        <Card className="p-8 max-w-md flex flex-col items-center">
+          <CircularProgress size={60} thickness={4} className="mb-4" />
+          <Typography variant="h6" color="textSecondary">
+            Loading statistics...
+          </Typography>
+          <Typography variant="body2" color="textSecondary" className="mt-2">
+            Please wait while we fetch your exam data
+          </Typography>
+        </Card>
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen text-red-500">
-        <AlertTriangle size={48} />
-        <div className="mt-4 text-lg font-medium">{error}</div>
-        <button
-          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-          onClick={() => window.location.reload()}
+      <Box className="flex flex-col items-center justify-center h-screen">
+        <Paper
+          elevation={3}
+          className="p-8 max-w-md flex flex-col items-center"
         >
-          Retry
-        </button>
-      </div>
+          <AlertTriangle size={64} color="#EF4444" />
+          <Typography variant="h5" className="mt-4 text-red-600 font-medium">
+            {error}
+          </Typography>
+          <Typography variant="body1" className="mt-2 text-center">
+            We encountered a problem retrieving the exam statistics. Please
+            check your connection or try again later.
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            className="mt-6"
+            startIcon={<RefreshIcon />}
+            onClick={() => {
+              setError(null);
+              setRefreshTrigger((prev) => prev + 1);
+            }}
+          >
+            Retry
+          </Button>
+        </Paper>
+      </Box>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {viewType === "overall" ? (
-        // Overall Exam Statistics View
-        <>
-          <h1 className="text-2xl font-bold mb-6">Exam Statistics Overview</h1>
+    <Box className="bg-pink-50 min-h-screen">
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          variant="filled"
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
 
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-            {getOverallMetrics().map((metric, index) => (
-              <div key={index} className="bg-white p-4 rounded-lg shadow">
-                <div className="text-sm text-gray-500">{metric.name}</div>
-                <div className="text-2xl font-bold">{metric.value}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">
-                Exam Performance Comparison
-              </h2>
-              <div className="flex space-x-2">
-                <button
-                  className={`p-2 rounded ${
-                    chartType === "bar"
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-200"
-                  }`}
-                  onClick={() => setChartType("bar")}
-                >
-                  <BarChart3 size={18} />
-                </button>
-                <button
-                  className={`p-2 rounded ${
-                    chartType === "line"
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-200"
-                  }`}
-                  onClick={() => setChartType("line")}
-                >
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M3 3v18h18"></path>
-                    <path d="M3 12h18"></path>
-                    <path d="M3 6h18"></path>
-                    <path d="M3 18h18"></path>
-                    <path d="M16 16l-4-8-4 4-4 4"></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white p-4 rounded-lg shadow h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                {chartType === "bar" ? (
-                  <BarChart
-                    data={getExamPerformanceData()}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="name"
-                      angle={-45}
-                      textAnchor="end"
-                      height={70}
-                    />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar
-                      dataKey="avgScore"
-                      name="Avg Score (%)"
-                      fill="#0088FE"
-                    />
-                    <Bar dataKey="attempts" name="Attempts" fill="#00C49F" />
-                  </BarChart>
-                ) : (
-                  <LineChart
-                    data={getExamPerformanceData()}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="name"
-                      angle={-45}
-                      textAnchor="end"
-                      height={70}
-                    />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="avgScore"
-                      name="Avg Score (%)"
-                      stroke="#0088FE"
-                      activeDot={{ r: 8 }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="attempts"
-                      name="Attempts"
-                      stroke="#00C49F"
-                    />
-                  </LineChart>
-                )}
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <h2 className="text-xl font-semibold mb-4">Available Exams</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {exams.map((exam) => (
-              <div
-                key={exam.id}
-                className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => handleExamSelect(exam.id)}
+      <Box className="container mx-auto px-4 py-8">
+        {viewType === "overall" ? (
+          <Box>
+            {/* dashboard refresh button */}
+            <Box className="flex justify-between items-center mb-6">
+              <Typography
+                variant="h4"
+                component="h1"
+                className="font-bold text-gray-800"
               >
-                <h3 className="text-lg font-medium mb-2">{exam.title}</h3>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <p className="text-gray-500">Questions</p>
-                    <p className="font-medium">{exam.question_count || 0}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Attempts</p>
-                    <p className="font-medium">{exam.sessions_count || 0}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Avg Score</p>
-                    <p className="font-medium">
-                      {(exam.average_score || 0).toFixed(2)}%
-                    </p>
-                  </div>
-                  <div>
-                    {" "}
-                    <p className="text-gray-500">Completion</p>
-                    <p className="font-medium">
-                      {(exam.completion_rate || 0).toFixed(2)}%
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      ) : (
-        // Individual Exam Statistics View
-        <>
-          <div className="mb-6">
-            <button
-              onClick={handleBackToOverview}
-              className="flex items-center text-blue-500 hover:text-blue-600"
+                Exam Statistics Dashboard
+              </Typography>
+              <Button
+                variant="outlined"
+                startIcon={<RefreshIcon />}
+                onClick={() => setRefreshTrigger((prev) => prev + 1)}
+              >
+                Refresh
+              </Button>
+            </Box>
+
+            {/* Key Metrics */}
+            <Grid
+              container
+              spacing={3}
+              className="mb-8 mt-4 gap-4 md:gap-8 lg:gap-12 xl:gap-16 flex-wrap justify-center items-center"
             >
-              <ArrowLeft size={20} className="mr-1" />
-              Back to Overview
-            </button>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow mb-6">
-            <h1 className="text-2xl font-bold mb-4">{examStatistics?.title}</h1>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-gray-50 p-4 rounded">
-                <p className="text-sm text-gray-500">Total Attempts</p>
-                <p className="text-2xl font-bold">
-                  {examStatistics?.sessions_count || 0}
-                </p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded">
-                <p className="text-sm text-gray-500">Average Score</p>
-                <p className="text-2xl font-bold">
-                  {(examStatistics?.average_score || 0).toFixed(2)}%
-                </p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded">
-                <p className="text-sm text-gray-500">Questions</p>
-                <p className="text-2xl font-bold">
-                  {examStatistics?.question_count || 0}
-                </p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded">
-                <p className="text-sm text-gray-500">Completion Rate</p>
-                <p className="text-2xl font-bold">
-                  {(examStatistics?.completion_rate || 0).toFixed(2)}%
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Answer Distribution Chart */}
-              <div className="bg-white p-4 rounded-lg border">
-                <h3 className="text-lg font-semibold mb-4">
-                  Answer Distribution
-                </h3>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={getIndividualExamPerformance()}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={({ name, percent }) =>
-                          `${name}: ${(percent * 100).toFixed(0)}%`
-                        }
-                      >
-                        {getIndividualExamPerformance().map((entry, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={COLORS[index % COLORS.length]}
-                          />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Question Difficulty Chart */}
-              <div className="bg-white p-4 rounded-lg border">
-                <h3 className="text-lg font-semibold mb-4">
-                  Question Difficulty Analysis
-                </h3>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={getQuestionDifficultyData()}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar
-                        dataKey="correctPercentage"
-                        name="Correct %"
-                        fill="#0088FE"
-                      />
-                      <Bar
-                        dataKey="attemptPercentage"
-                        name="Attempt %"
-                        fill="#00C49F"
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Time Distribution Chart */}
-              <div className="bg-white p-4 rounded-lg border">
-                <h3 className="text-lg font-semibold mb-4">
-                  Completion Time Distribution
-                </h3>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={getTimeDistributionData()}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar
-                        dataKey="completions"
-                        name="Completions"
-                        fill="#8884d8"
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* AI Suggestions Section */}
-              <div className="bg-white p-4 rounded-lg border">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold">
-                    AI Analysis & Suggestions
-                  </h3>
-                  <button
-                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center"
-                    onClick={generateAiSuggestions}
-                    disabled={suggestionsLoading}
+              {getOverallMetrics().map((metric, index) => (
+                <Grid item xs={12} sm={6} md={4} lg={2.4} key={index}>
+                  <Card
+                    className="h-full transition-all hover:shadow-lg"
+                    sx={{
+                      borderLeft: `4px solid ${metric.color}`,
+                      backgroundColor:
+                        theme.palette.mode === "dark"
+                          ? "rgba(30, 41, 59, 0.8)"
+                          : "white",
+                    }}
                   >
-                    {suggestionsLoading ? (
-                      <>
-                        <HelpCircle className="animate-spin mr-2" size={16} />
-                        Analyzing...
-                      </>
+                    <CardContent className="p-4">
+                      <Box className="flex justify-between items-start">
+                        <Typography
+                          variant="subtitle2"
+                          className="text-gray-500"
+                        >
+                          {metric.name}
+                        </Typography>
+                      </Box>
+                      <Typography variant="h5" className="font-bold mt-2">
+                        {metric.value}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+
+            {/* Performance Charts */}
+            <Card className="mb-8 shadow-lg rounded-lg">
+              <CardContent>
+                {/* select chart type */}
+                <Box className="flex justify-between items-center mb-4">
+                  <Typography
+                    variant="h6"
+                    component="h2"
+                    className="font-semibold"
+                  >
+                    Exam Performance Comparison
+                  </Typography>
+                  <Box className="flex space-x-2">
+                    <MuiTooltip title="Bar Chart">
+                      <IconButton
+                        onClick={() => setChartType("bar")}
+                        color={chartType === "bar" ? "primary" : "default"}
+                      >
+                        <BarChartIcon />
+                      </IconButton>
+                    </MuiTooltip>
+                    <MuiTooltip title="Line Chart">
+                      <IconButton
+                        onClick={() => setChartType("line")}
+                        color={chartType === "line" ? "primary" : "default"}
+                      >
+                        <LineChartIcon />
+                      </IconButton>
+                    </MuiTooltip>
+                  </Box>
+                </Box>
+
+                {/* charts go here  */}
+                <Box sx={{ width: "100%" }} className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    {chartType === "bar" ? (
+                      <BarChart
+                        data={getExamPerformanceData()}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          strokeOpacity={0.3}
+                        />
+                        <XAxis
+                          dataKey="name"
+                          angle={-45}
+                          textAnchor="end"
+                          height={70}
+                          tick={{ fill: theme.palette.text.secondary }}
+                        />
+                        <YAxis tick={{ fill: theme.palette.text.secondary }} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: theme.palette.background.paper,
+                            borderRadius: "8px",
+                            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                            border: "none",
+                          }}
+                        />
+                        <Legend wrapperStyle={{ paddingTop: 15 }} />
+                        <Bar
+                          dataKey="avgScore"
+                          name="Avg Score (%)"
+                          fill={CHART_COLORS.primary}
+                          radius={[4, 4, 0, 0]}
+                        />
+                        <Bar
+                          dataKey="attempts"
+                          name="Attempts"
+                          fill={CHART_COLORS.secondary}
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
                     ) : (
-                      <>
-                        <HelpCircle className="mr-2" size={16} />
-                        Get Insights
-                      </>
+                      <LineChart
+                        data={getExamPerformanceData()}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          strokeOpacity={0.3}
+                        />
+                        <XAxis
+                          dataKey="name"
+                          angle={-45}
+                          textAnchor="end"
+                          height={70}
+                          tick={{ fill: theme.palette.text.secondary }}
+                        />
+                        <YAxis tick={{ fill: theme.palette.text.secondary }} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: theme.palette.background.paper,
+                            borderRadius: "8px",
+                            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                            border: "none",
+                          }}
+                        />
+                        <Legend wrapperStyle={{ paddingTop: 15 }} />
+                        <Line
+                          type="monotone"
+                          dataKey="avgScore"
+                          name="Avg Score (%)"
+                          stroke={CHART_COLORS.primary}
+                          activeDot={{ r: 8 }}
+                          strokeWidth={2}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="attempts"
+                          name="Attempts"
+                          stroke={CHART_COLORS.secondary}
+                          activeDot={{ r: 6 }}
+                          strokeWidth={2}
+                        />
+                      </LineChart>
                     )}
-                  </button>
-                </div>
-                <div className="bg-gray-50 p-4 rounded min-h-[200px] max-h-[300px] overflow-y-auto">
-                  {aiSuggestions ? (
-                    <div className="prose max-w-none">
-                      {aiSuggestions.split("\n").map((paragraph, idx) => (
-                        <p key={idx} className="mb-2">
-                          {paragraph}
-                        </p>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-500 italic">
-                      Click "Generate Insights" to get AI-powered analysis of
-                      this exam's performance data.
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
+                  </ResponsiveContainer>
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Exam Grid */}
+            <Box className="mb-4">
+              <Typography
+                variant="h6"
+                component="h2"
+                sx={{
+                  fontSize: 40,
+                  mb: 6,
+                  color: theme.palette.text.primary,
+                }}
+                className="mb-6 flex items-center justify-center"
+              >
+                Available Exams
+              </Typography>
+
+              <Grid container spacing={3}>
+                {exams.map((exam) => (
+                  <Grid item xs={12} sm={6} md={4} key={exam.id}>
+                    <Card
+                      className="h-full transition-all hover:shadow-lg cursor-pointer border-t-4"
+                      sx={{ borderTopColor: CHART_COLORS.primary }}
+                      onClick={() => handleExamSelect(exam.id)}
+                    >
+                      <CardContent>
+                        <Box className="flex justify-between mb-3">
+                          <Typography
+                            variant="h6"
+                            noWrap
+                            className="font-medium"
+                          >
+                            {exam.title}
+                          </Typography>
+                          <Chip
+                            label={`${exam.sessions_count || 0} Attempts`}
+                            size="small"
+                            color="primary"
+                            sx={{
+                              backgroundColor: `${CHART_COLORS.primary}40`,
+                              color: CHART_COLORS.primary,
+                            }}
+                          />
+                        </Box>
+
+                        <Divider className="mb-3" />
+
+                        <Grid container spacing={2} className="mt-1">
+                          <Grid item xs={6}>
+                            <Box className="flex flex-col">
+                              <Typography
+                                variant="caption"
+                                className="text-gray-500"
+                              >
+                                Questions
+                              </Typography>
+                              <Typography
+                                variant="body1"
+                                className="font-medium"
+                              >
+                                {exam.question_count || 0}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Box className="flex flex-col">
+                              <Typography
+                                variant="caption"
+                                className="text-gray-500"
+                              >
+                                Avg Score
+                              </Typography>
+                              <Typography
+                                variant="body1"
+                                className="font-medium"
+                                sx={{
+                                  color:
+                                    exam.average_score > 70
+                                      ? CHART_COLORS.correct
+                                      : exam.average_score > 50
+                                      ? CHART_COLORS.tertiary
+                                      : CHART_COLORS.wrong,
+                                }}
+                              >
+                                {(exam.average_score || 0).toFixed(1)}%
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Box className="flex flex-col">
+                              <Typography
+                                variant="caption"
+                                className="text-gray-500"
+                              >
+                                Completion
+                              </Typography>
+                              <Typography
+                                variant="body1"
+                                className="font-medium"
+                              >
+                                {(exam.completion_rate || 0).toFixed(1)}%
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Box className="flex justify-end items-end h-full">
+                              <Button
+                                size="small"
+                                variant="text"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleExamSelect(exam.id);
+                                }}
+                              >
+                                Details ⇒
+                              </Button>
+                            </Box>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          </Box>
+        ) : (
+          // Individual Exam Statistics View
+          <Box>
+            <Box className="mb-6">
+              <Button
+                color="dark"
+                startIcon={<ArrowBackIcon />}
+                variant="outlined"
+                onClick={handleBackToOverview}
+              >
+                Back to Overview
+              </Button>
+            </Box>
+
+            <Card className="mb-8">
+              <CardContent className="p-6">
+                <Typography
+                  variant="h5"
+                  component="h1"
+                  className="font-bold flex items-center"
+                >
+                  EXAM: {examStatistics?.title}
+                  <Chip
+                    label={`${examStatistics?.sessions_count || 0} Attempts`}
+                    size="small"
+                    className="ml-3"
+                    sx={{
+                      backgroundColor: `${CHART_COLORS.primary}20`,
+                      padding: "20px 8px",
+                      color: CHART_COLORS.primary,
+                    }}
+                  />
+                </Typography>
+
+                <Divider className="py-5" />
+
+                {/* make the grids at center */}
+                <Grid
+                  container
+                  spacing={3}
+                  className="mb-6 mt-10 items-center justify-center"
+                >
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box
+                      className="bg-gray-50 p-4 rounded-lg border-l-4"
+                      sx={{ borderLeftColor: CHART_COLORS.primary }}
+                    >
+                      <Typography variant="caption" className="text-gray-500">
+                        Average Score
+                      </Typography>
+                      <Typography variant="h5" className="font-bold mt-1">
+                        {(examStatistics?.average_score || 0).toFixed(1)}%
+                      </Typography>
+                      <Box className="w-full bg-gray-200 h-1 mt-2 rounded-full overflow-hidden">
+                        <Box
+                          className="h-full"
+                          sx={{
+                            width: `${examStatistics?.average_score || 0}%`,
+                            backgroundColor:
+                              examStatistics?.average_score > 70
+                                ? CHART_COLORS.correct
+                                : examStatistics?.average_score > 50
+                                ? CHART_COLORS.tertiary
+                                : CHART_COLORS.wrong,
+                          }}
+                        />
+                      </Box>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box
+                      className="bg-gray-50 p-4 rounded-lg border-l-4"
+                      sx={{ borderLeftColor: CHART_COLORS.secondary }}
+                    >
+                      <Typography variant="caption" className="text-gray-500">
+                        Questions
+                      </Typography>
+                      <Typography variant="h5" className="font-bold mt-1">
+                        {examStatistics?.question_count || 0}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        className="text-gray-500 mt-1"
+                      >
+                        Total questions in exam
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box
+                      className="bg-gray-50 p-4 rounded-lg border-l-4"
+                      sx={{ borderLeftColor: CHART_COLORS.tertiary }}
+                    >
+                      <Typography variant="caption" className="text-gray-500">
+                        Completion Rate
+                      </Typography>
+                      <Typography variant="h5" className="font-bold mt-1">
+                        {(examStatistics?.completion_rate || 0).toFixed(1)}%
+                      </Typography>
+                      <Box className="w-full bg-gray-200 h-1 mt-2 rounded-full overflow-hidden">
+                        <Box
+                          className="h-full"
+                          sx={{
+                            width: `${examStatistics?.completion_rate || 0}%`,
+                            backgroundColor: CHART_COLORS.tertiary,
+                          }}
+                        />
+                      </Box>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box
+                      className="bg-gray-50 p-4 rounded-lg border-l-4 flex flex-col h-full"
+                      sx={{ borderLeftColor: CHART_COLORS.quaternary }}
+                    >
+                      <Typography variant="caption" className="text-gray-500">
+                        Average Time
+                      </Typography>
+                      <Typography variant="h5" className="font-bold mt-1">
+                        {examStatistics?.average_time || "N/A"}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        className="text-gray-500 mt-1"
+                      >
+                        Minutes to complete
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
+
+                <Tabs
+                  value={selectedTab}
+                  onChange={handleTabChange}
+                  variant="scrollable"
+                  scrollButtons="auto"
+                  className="mb-4"
+                  sx={{
+                    "& .MuiTab-root": {
+                      textTransform: "none",
+                      fontWeight: 500,
+                    },
+                    "& .Mui-selected": {
+                      color: CHART_COLORS.primary,
+                    },
+                    "& .MuiTabs-indicator": {
+                      backgroundColor: CHART_COLORS.primary,
+                    },
+                  }}
+                >
+                  <Tab
+                    label="Overview"
+                    icon={<BarChartIcon />}
+                    iconPosition="start"
+                  />
+                  <Tab
+                    label="Question Analysis"
+                    icon={<PieChartIcon />}
+                    iconPosition="start"
+                  />
+                  <Tab
+                    label="Performance Insights"
+                    icon={<LightbulbIcon />}
+                    iconPosition="start"
+                  />
+                </Tabs>
+
+                {selectedTab === 0 && (
+                  <Grid className="mb-6 justify-center" container spacing={4}>
+                    {/* Answer Distribution Chart */}
+                    <Grid item xs={12} md={6}>
+                      <Card variant="outlined" className="h-full">
+                        <CardContent>
+                          <Box className="flex justify-between items-center mb-4">
+                            <Typography variant="h6" className="font-semibold">
+                              Answer Distribution
+                            </Typography>
+                            <MuiTooltip title="Shows the breakdown of correct, wrong, and unanswered questions">
+                              <InfoIcon fontSize="small" color="warning" />
+                            </MuiTooltip>
+                          </Box>
+                          <Box className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={getIndividualExamPerformance()}
+                                  cx="50%"
+                                  cy="50%"
+                                  labelLine={false}
+                                  outerRadius={80}
+                                  fill="#8884d8"
+                                  dataKey="value"
+                                  label={({ name, percent }) =>
+                                    `${name}: ${(percent * 100).toFixed(0)}%`
+                                  }
+                                >
+                                  {getIndividualExamPerformance().map(
+                                    (entry, index) => (
+                                      <Cell
+                                        key={`cell-${index}`}
+                                        fill={
+                                          entry.color ||
+                                          COLORS[index % COLORS.length]
+                                        }
+                                      />
+                                    )
+                                  )}
+                                </Pie>
+                                <Tooltip
+                                  contentStyle={{
+                                    borderRadius: "8px",
+                                    boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+                                    border: "none",
+                                  }}
+                                />
+                                <Legend wrapperStyle={{ paddingTop: 15 }} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+
+                    {/* Time Distribution Chart */}
+                    <Grid item xs={12} md={6}>
+                      <Card variant="outlined" className="h-full">
+                        <CardContent>
+                          <Box className="flex justify-between items-center mb-4">
+                            <Typography variant="h6" className="font-semibold">
+                              Completion Time Distribution
+                            </Typography>
+                            <MuiTooltip title="Shows how long students took to complete the exam">
+                              <InfoIcon fontSize="small" color="warning" />
+                            </MuiTooltip>
+                          </Box>
+                          <Box className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={getTimeDistributionData()}>
+                                <CartesianGrid
+                                  strokeDasharray="3 3"
+                                  strokeOpacity={0.3}
+                                />
+                                <XAxis
+                                  dataKey="name"
+                                  tick={{ fill: theme.palette.text.secondary }}
+                                />
+                                <YAxis
+                                  tick={{ fill: theme.palette.text.secondary }}
+                                />
+                                <Tooltip
+                                  contentStyle={{
+                                    borderRadius: "8px",
+                                    boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+                                    border: "none",
+                                  }}
+                                />
+                                <Legend />
+                                <Bar
+                                  dataKey="completions"
+                                  name="Completions"
+                                  fill={CHART_COLORS.quinary}
+                                  radius={[4, 4, 0, 0]}
+                                />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+
+                    {/* Radar Chart */}
+                    <Grid item xs={12}>
+                      <Card variant="outlined">
+                        <CardContent>
+                          <Box className="flex justify-between items-center mb-4">
+                            <Typography variant="h6" className="font-semibold">
+                              Performance Radar
+                            </Typography>
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  checked={showRadarChart}
+                                  onChange={(e) =>
+                                    setShowRadarChart(e.target.checked)
+                                  }
+                                  color="primary"
+                                />
+                              }
+                              label="Show Advanced Analytics"
+                            />
+                          </Box>
+
+                          {showRadarChart ? (
+                            <Box className="h-72">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <RadarChart
+                                  outerRadius={90}
+                                  data={getRadarChartData()}
+                                >
+                                  <PolarGrid strokeOpacity={0.3} />
+                                  <PolarAngleAxis
+                                    dataKey="subject"
+                                    tick={{
+                                      fill: theme.palette.text.secondary,
+                                    }}
+                                  />
+                                  <PolarRadiusAxis angle={30} domain={[0, 1]} />
+                                  <Radar
+                                    name="Performance"
+                                    dataKey="value"
+                                    stroke={CHART_COLORS.primary}
+                                    fill={CHART_COLORS.primary}
+                                    fillOpacity={0.5}
+                                  />
+                                  <Tooltip />
+                                </RadarChart>
+                              </ResponsiveContainer>
+                            </Box>
+                          ) : (
+                            <Box className="h-72 flex flex-col items-center justify-center">
+                              <RadarIcon
+                                style={{
+                                  fontSize: 60,
+                                  color: theme.palette.text.secondary,
+                                  opacity: 0.5,
+                                }}
+                              />
+                              <Typography
+                                variant="body1"
+                                color="textSecondary"
+                                className="mt-4"
+                              >
+                                Enable the advanced analytics to view the
+                                performance radar chart
+                              </Typography>
+                              <Button
+                                variant="outlined"
+                                onClick={() => setShowRadarChart(true)}
+                                className="mt-4"
+                              >
+                                Show Radar Chart
+                              </Button>
+                            </Box>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  </Grid>
+                )}
+
+                {selectedTab === 1 && (
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Box className="flex justify-between items-center mb-4">
+                        <Typography variant="h6" className="font-semibold">
+                          Question Difficulty Analysis
+                        </Typography>
+                        <MuiTooltip title="Shows correct and attempt percentages per question">
+                          <InfoIcon fontSize="small" color="action" />
+                        </MuiTooltip>
+                      </Box>
+                      <Box className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={getQuestionDifficultyData()}
+                            margin={{
+                              top: 20,
+                              right: 30,
+                              left: 20,
+                              bottom: 20,
+                            }}
+                          >
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              strokeOpacity={0.3}
+                            />
+                            <XAxis
+                              dataKey="name"
+                              tick={{ fill: theme.palette.text.secondary }}
+                            />
+                            <YAxis
+                              tick={{ fill: theme.palette.text.secondary }}
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                borderRadius: "8px",
+                                boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+                                border: "none",
+                              }}
+                            />
+                            <Legend />
+                            <Bar
+                              dataKey="correctPercentage"
+                              name="Correct %"
+                              fill={CHART_COLORS.correct}
+                              radius={[4, 4, 0, 0]}
+                            />
+                            <Bar
+                              dataKey="attemptPercentage"
+                              name="Attempt %"
+                              fill={CHART_COLORS.tertiary}
+                              radius={[4, 4, 0, 0]}
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </Box>
+
+                      <Box className="mt-6">
+                        <Alert severity="info" icon={<InfoIcon />}>
+                          <Typography variant="subtitle2">
+                            How to read this chart:
+                          </Typography>
+                          <Typography variant="body2">
+                            The "Correct %" shows how many students answered the
+                            question correctly. The "Attempt %" shows how many
+                            students attempted the question at all. Questions
+                            with low correct percentage but high attempt
+                            percentage may be too difficult.
+                          </Typography>
+                        </Alert>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {selectedTab === 2 && (
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Box className="flex justify-between items-center mb-4">
+                        <Typography
+                          variant="h6"
+                          className="font-semibold flex items-center"
+                        >
+                          <LightbulbIcon
+                            className="mr-2"
+                            sx={{ color: CHART_COLORS.tertiary }}
+                          />
+                          AI Analysis & Suggestions
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={generateAiSuggestions}
+                          disabled={suggestionsLoading}
+                          startIcon={
+                            suggestionsLoading ? (
+                              <CircularProgress size={20} color="inherit" />
+                            ) : (
+                              <HelpCircle size={20} />
+                            )
+                          }
+                          sx={{
+                            backgroundColor: CHART_COLORS.primary,
+                            "&:hover": {
+                              backgroundColor: CHART_COLORS.secondary,
+                            },
+                          }}
+                        >
+                          {suggestionsLoading
+                            ? "Analyzing..."
+                            : "Generate Insights"}
+                        </Button>
+                      </Box>
+
+                      <Paper
+                        variant="outlined"
+                        className="p-6 min-h-[300px] max-h-[500px] overflow-y-auto"
+                        sx={{
+                          backgroundColor: theme.palette.background.default,
+                          border: `1px solid ${theme.palette.divider}`,
+                        }}
+                      >
+                        {aiSuggestions ? (
+                          <Box className="prose max-w-none">
+                            {aiSuggestions.split("\n").map((paragraph, idx) => (
+                              <Typography key={idx} variant="body1" paragraph>
+                                {paragraph}
+                              </Typography>
+                            ))}
+                          </Box>
+                        ) : (
+                          <Box className="h-full flex flex-col items-center justify-center">
+                            <LightbulbIcon
+                              style={{
+                                fontSize: 60,
+                                color: CHART_COLORS.tertiary,
+                                opacity: 0.5,
+                              }}
+                            />
+                            <Typography
+                              variant="body1"
+                              color="textSecondary"
+                              className="mt-4 text-center"
+                            >
+                              Click "Generate Insights" to get AI-powered
+                              analysis of this exam's performance data.
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              color="textSecondary"
+                              className="mt-2 text-center max-w-md"
+                            >
+                              The AI will analyze question difficulty, student
+                              performance patterns, and provide customized
+                              recommendations for improving the exam.
+                            </Typography>
+                          </Box>
+                        )}
+                      </Paper>
+                    </CardContent>
+                  </Card>
+                )}
+              </CardContent>
+            </Card>
+          </Box>
+        )}
+      </Box>
+    </Box>
   );
 }
 

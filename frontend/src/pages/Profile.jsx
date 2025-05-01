@@ -445,7 +445,7 @@ function Profile() {
       sx={{
         minHeight: "100vh",
         background:
-          "linear-gradient(135deg,rgb(14, 26, 78) 0%,rgb(183, 132, 235) 100%)",
+          "linear-gradient(135deg, rgb(11, 36, 147) 0%, rgb(107, 190, 245) 100%)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
