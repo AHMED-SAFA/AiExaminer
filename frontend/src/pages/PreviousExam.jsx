@@ -168,24 +168,52 @@ function PreviousExam() {
                     variant="outlined"
                   />
                 </Box>
-                <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 1,
+                    mb: 2,
+                    flexWrap: "wrap",
+                  }}
+                >
                   <Chip
                     icon={<CheckCircleIcon />}
                     label={`Correct: ${session.corrected_ans}`}
                     color="success"
                     variant="outlined"
+                    size="small"
+                    sx={{
+                      "& .MuiChip-label": {
+                        whiteSpace: "normal",
+                        display: "block",
+                      },
+                    }}
                   />
                   <Chip
                     icon={<CancelIcon />}
                     label={`Wrong: ${session.wrong_ans}`}
                     color="error"
                     variant="outlined"
+                    size="small"
+                    sx={{
+                      "& .MuiChip-label": {
+                        whiteSpace: "normal",
+                        display: "block",
+                      },
+                    }}
                   />
                   <Chip
                     icon={<HelpOutlineIcon />}
                     label={`Unanswered: ${session.unanswered}`}
                     color="warning"
                     variant="outlined"
+                    size="small"
+                    sx={{
+                      "& .MuiChip-label": {
+                        whiteSpace: "normal",
+                        display: "block",
+                      },
+                    }}
                   />
                 </Box>
                 <Typography variant="body2" color="text.secondary">

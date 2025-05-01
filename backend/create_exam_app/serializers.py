@@ -56,17 +56,6 @@ class ExamCreateSerializer(serializers.ModelSerializer):
             )
         return value
 
-    def validate_minus_marking_value(self, value):
-        """Validate minus marking value"""
-        if value is None:
-            return value
-
-        if value < 0 or value > 1:
-            raise serializers.ValidationError(
-                "Minus marking value must be between 0 and 1"
-            )
-        return value
-
 
 class OptionSerializer(serializers.ModelSerializer):
     """Serializer for MCQ options"""

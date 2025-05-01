@@ -86,10 +86,6 @@ export default function Navbar() {
     setMobileMoreAnchorEl(null);
   };
 
-  const handleMobileMenuOpen = (event) => {
-    setMobileMoreAnchorEl(event.currentTarget);
-  };
-
   const handleDrawerOpen = () => {
     setOpen(true);
   };
@@ -224,7 +220,7 @@ export default function Navbar() {
                 component="span"
                 sx={{ fontWeight: 600 }}
               >
-                AiExam
+                AiExaminer
               </Typography>
             </Link>
           </Typography>
@@ -295,24 +291,6 @@ export default function Navbar() {
             </Typography>
             <IconButton
               size="large"
-              aria-label="show 4 new mails"
-              color="inherit"
-            >
-              <Badge badgeContent={4} color="error">
-                <MailIcon />
-              </Badge>
-            </IconButton>
-            <IconButton
-              size="large"
-              aria-label="show 17 new notifications"
-              color="inherit"
-            >
-              <Badge badgeContent={17} color="error">
-                <NotificationsIcon />
-              </Badge>
-            </IconButton>
-            <IconButton
-              size="large"
               edge="end"
               aria-label="account of current user"
               aria-controls={menuId}
@@ -331,20 +309,6 @@ export default function Navbar() {
               )}
             </IconButton>
           </Box>
-
-          {/* Mobile More Icon */}
-          <Box sx={{ display: { xs: "flex", md: "none" } }}>
-            <IconButton
-              size="large"
-              aria-label="show more"
-              aria-controls={mobileMenuId}
-              aria-haspopup="true"
-              onClick={handleMobileMenuOpen}
-              color="inherit"
-            >
-              <MoreIcon />
-            </IconButton>
-          </Box>
         </Toolbar>
       </AppBar>
 
@@ -359,19 +323,22 @@ export default function Navbar() {
           },
           display: { xs: "block", md: "none" },
         }}
-        variant="temporary"
+        variant="transparents"
         anchor="left"
         open={open}
         onClose={handleDrawerClose}
       >
         <DrawerHeader>
           <Typography
+            component={Link}
+            onClick={handleDrawerClose}
+            to="/"
+            style={{ textDecoration: "none", color: "black" }}
             variant="h6"
             noWrap
-            component="div"
             sx={{ flexGrow: 1, textAlign: "center", fontWeight: 700 }}
           >
-            AiExam
+            AiExaminer
           </Typography>
           <IconButton onClick={handleDrawerClose}>
             {theme.direction === "ltr" ? (
@@ -386,15 +353,6 @@ export default function Navbar() {
 
         <List>
           {/* Navigation Items */}
-          <ListItem disablePadding>
-            <ListItemButton
-              component={Link}
-              to="/create-exam"
-              onClick={handleDrawerClose}
-            >
-              <ListItemText primary="Create Exam" />
-            </ListItemButton>
-          </ListItem>
 
           <ListItem disablePadding>
             <ListItemButton
@@ -409,7 +367,7 @@ export default function Navbar() {
           <ListItem disablePadding>
             <ListItemButton
               component={Link}
-              to="/statistics"
+              to="/exam-statistics"
               onClick={handleDrawerClose}
             >
               <ListItemText primary="Statistics" />
@@ -436,30 +394,6 @@ export default function Navbar() {
                 ) : (
                   <AccountCircle />
                 )}
-              </ListItemIcon>
-            </ListItemButton>
-          </ListItem>
-
-          {/* Messages */}
-          <ListItem disablePadding>
-            <ListItemButton onClick={handleDrawerClose}>
-              <ListItemText primary="Messages" />
-              <ListItemIcon>
-                <Badge badgeContent={4} color="error">
-                  <MailIcon />
-                </Badge>
-              </ListItemIcon>
-            </ListItemButton>
-          </ListItem>
-
-          {/* Notifications */}
-          <ListItem disablePadding>
-            <ListItemButton onClick={handleDrawerClose}>
-              <ListItemText primary="Notifications" />
-              <ListItemIcon>
-                <Badge badgeContent={17} color="error">
-                  <NotificationsIcon />
-                </Badge>
               </ListItemIcon>
             </ListItemButton>
           </ListItem>

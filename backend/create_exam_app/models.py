@@ -1,8 +1,6 @@
 from django.db import models
 import uuid
 import os
-from django.conf import settings
-from django.utils import timezone
 from auth_app.models import User
 
 

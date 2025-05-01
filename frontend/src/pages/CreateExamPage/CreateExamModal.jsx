@@ -57,8 +57,7 @@ const CreateExamModal = ({ open, handleClose, handleSubmit }) => {
     setActiveStep((prevStep) => prevStep - 1);
   };
 
-  const handleFormSubmit = () => {
-    // Create FormData object for file upload
+  const handleFormSubmit = async () => {
     const formData = new FormData();
     formData.append("title", examData.title);
     formData.append("pdf_file", examData.pdfFile);
@@ -69,7 +68,22 @@ const CreateExamModal = ({ open, handleClose, handleSubmit }) => {
     formData.append("minus_marking_value", examData.minusMarkingValue);
     formData.append("mcq_options_count", examData.minmcqOptionsCount);
 
-    handleSubmit(formData);
+    await handleSubmit(formData);
+    clearModel();
+  };
+
+  const clearModel = () => {
+    setExamData({
+      title: "",
+      pdfFile: null,
+      duration: 60,
+      totalMarks: 50,
+      each_question_marks: 1,
+      minusMarking: false,
+      minusMarkingValue: "",
+      minmcqOptionsCount: 2,
+    });
+    setActiveStep(0);
     handleClose();
   };
 
@@ -81,7 +95,7 @@ const CreateExamModal = ({ open, handleClose, handleSubmit }) => {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={clearModel} maxWidth="md" fullWidth>
       <DialogTitle>Create Exam</DialogTitle>
       <DialogContent>
         <Stepper activeStep={activeStep} sx={{ mb: 4, mt: 2 }}>
@@ -215,7 +229,7 @@ const CreateExamModal = ({ open, handleClose, handleSubmit }) => {
         )}
       </DialogContent>
       <DialogActions sx={{ p: 3, pt: 2 }}>
-        <Button onClick={handleClose}>Cancel</Button>
+        <Button onClick={clearModel}>Cancel</Button>
         {activeStep > 0 && <Button onClick={handleBack}>Back</Button>}
         {activeStep < steps.length - 1 ? (
           <Button

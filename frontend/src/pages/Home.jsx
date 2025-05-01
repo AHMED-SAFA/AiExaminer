@@ -314,7 +314,7 @@ const Home = () => {
           sx={{
             backgroundColor: "rgba(255, 255, 255, 0.2)",
             backdropFilter: "blur(10px)",
-            color: "grey.900",
+
             "&:hover": {
               backgroundColor: "rgba(255, 255, 255, 0.3)",
             },
@@ -361,7 +361,6 @@ const Home = () => {
                     cursor: "pointer",
                     transition: "transform 0.2s",
                     "&:hover": {
-                      transform: "scale(1.02)",
                       boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.15)",
                     },
                   }}
@@ -449,30 +448,19 @@ const Home = () => {
                           "Generate Answer/Option"
                         )}
                       </Button>
+                      <Typography
+                        variant="body2"
+                        sx={{ mt: 2, borderRadius: 2 }}
+                      >
+                        {exam.processing_status === "Generated" ? (
+                          <Alert severity="success">
+                            Exam is ready! Click to start.
+                          </Alert>
+                        ) : (
+                          <Alert severity="error"> Generate exam first.</Alert>
+                        )}
+                      </Typography>
                     </Box>
-                    {exam.output_pdf && (
-                      <Box sx={{ mt: 2 }}>
-                        <Button
-                          variant="outlined"
-                          component="a"
-                          href={`${exam.output_pdf}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          startIcon={<VisibilityIcon />}
-                          size="small"
-                          onClick={(e) => e.stopPropagation()}
-                          sx={{
-                            color: "primary.main",
-                            borderColor: "primary.main",
-                            "&:hover": {
-                              backgroundColor: "rgba(0, 0, 0, 0.1)",
-                            },
-                          }}
-                        >
-                          View question set
-                        </Button>
-                      </Box>
-                    )}
                   </CardContent>
                 </Card>
               </Grid>
