@@ -15,6 +15,7 @@ import ExamSession from "./pages/TakeExam/ExamSession";
 import PreviousExam from "./pages/PreviousExam";
 import ExamReview from "./pages/ExamReview";
 import StatisticsPage from "./pages/StatisticsPage";
+import TokenProtectedRoutes from "./components/AuthComponents/TokenProtectedRoutes";
 
 function App() {
   const LayoutWithNavbar = ({ children }) => (
@@ -31,50 +32,61 @@ function App() {
           <Route
             path="/"
             element={
-              <LayoutWithNavbar>
-                <Home />
-              </LayoutWithNavbar>
+              <TokenProtectedRoutes>
+                <LayoutWithNavbar>
+                  <Home />
+                </LayoutWithNavbar>
+              </TokenProtectedRoutes>
             }
           />
           <Route
             path="/exam-session/:examId/:extractedExamId/:userId/:username"
             element={
-              <LayoutWithNavbar>
-                <ExamSession />
-              </LayoutWithNavbar>
+              <TokenProtectedRoutes>
+                <LayoutWithNavbar>
+                  <ExamSession />
+                </LayoutWithNavbar>
+              </TokenProtectedRoutes>
             }
           />
           <Route
             path="/previous-exams"
             element={
-              <LayoutWithNavbar>
-                <PreviousExam />
-              </LayoutWithNavbar>
+              <TokenProtectedRoutes>
+                <LayoutWithNavbar>
+                  <PreviousExam />
+                </LayoutWithNavbar>
+              </TokenProtectedRoutes>
             }
           />
           <Route
             path="/exam-statistics"
             element={
-              <LayoutWithNavbar>
-                <StatisticsPage />
-              </LayoutWithNavbar>
+              <TokenProtectedRoutes>
+                <LayoutWithNavbar>
+                  <StatisticsPage />
+                </LayoutWithNavbar>
+              </TokenProtectedRoutes>
             }
           />
           <Route
             path="/exam-review/:sessionId"
             element={
-              <LayoutWithNavbar>
-                <ExamReview />
-              </LayoutWithNavbar>
+              <TokenProtectedRoutes>
+                <LayoutWithNavbar>
+                  <ExamReview />
+                </LayoutWithNavbar>
+              </TokenProtectedRoutes>
             }
           />
-          {/* Other routes */}
           <Route
             path="/profile"
             element={
-              <LayoutWithNavbar>
-                <Profile />
-              </LayoutWithNavbar>
+              <TokenProtectedRoutes>
+                <LayoutWithNavbar>
+                  <Profile />
+                </LayoutWithNavbar>
+              </TokenProtectedRoutes>
             }
           />
           <Route

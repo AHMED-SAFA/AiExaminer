@@ -14,6 +14,8 @@ import {
   Fade,
   Chip,
   TextField,
+  Grid,
+  Stack,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -25,6 +27,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import PublicIcon from "@mui/icons-material/Public";
 import PhoneAndroidIcon from "@mui/icons-material/PhoneAndroid";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import HowToRegIcon from "@mui/icons-material/HowToReg";
+import BadgeIcon from "@mui/icons-material/Badge";
 import { motion } from "framer-motion";
 
 function Profile() {
@@ -48,17 +52,14 @@ function Profile() {
   const username = userData?.username || user?.username || "User";
   const email = userData?.email || user?.email || "";
   const isVerified = userData?.is_verified || user?.is_verified;
-  const mobile = userData?.mobile || "Set Mobile Number";
-  const nationality = userData?.nationality || "Set Nationality";
-  const dob = userData?.date_of_birth || "Set Date of Birth";
-  const date_joined =
-    userData?.date_joined
-      .split("T")[0]
-      .split("-")
-      .join("-")
-      .slice(0, 10)
-      .replace(/-/g, "-")
-      .slice(0, 10) || "";
+  const mobile = userData?.mobile || "Not set";
+  const nationality = userData?.nationality || "Not set";
+  const dob = userData?.date_of_birth
+    ? new Date(userData.date_of_birth).toLocaleDateString()
+    : "Not set";
+  const date_joined = userData?.date_joined
+    ? new Date(userData.date_joined).toLocaleDateString()
+    : "";
 
   useEffect(() => {
     fetchUserData();
@@ -84,7 +85,6 @@ function Profile() {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log("Fetched userData from profile:", response.data);
       setUserData(response.data);
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -113,11 +113,8 @@ function Profile() {
       setSuccessMessage(null);
 
       const formDataToSend = new FormData();
-
-      // Always include email in the form data since it's required by the backend
       formDataToSend.append("email", formData.email);
 
-      // Include other text fields only if they have values
       Object.keys(formData).forEach((key) => {
         if (
           key !== "email" &&
@@ -129,12 +126,9 @@ function Profile() {
         }
       });
 
-      // Only append image if a new one was selected
       if (newImage) {
         formDataToSend.append("image", newImage);
       }
-
-      console.log("Sending form data:", Object.fromEntries(formDataToSend));
 
       const response = await axios.patch(
         "http://127.0.0.1:8000/api/profile/update-profile/",
@@ -146,15 +140,13 @@ function Profile() {
           },
         }
       );
-      console.log("Profile updated:", response.data);
       setSuccessMessage("Profile updated successfully!");
       setUserData(response.data);
       setIsEditing(false);
-      setNewImage(null); // Reset the new image state
+      setNewImage(null);
     } catch (error) {
       console.error("Error updating profile:", error);
       if (error.response && error.response.data) {
-        // More detailed error messages
         const errorMessages = Object.entries(error.response.data)
           .map(([key, value]) => `${key}: ${value.join(", ")}`)
           .join("; ");
@@ -168,274 +160,311 @@ function Profile() {
   const renderProfileContent = () => {
     if (isEditing) {
       return (
-        <Box sx={{ ml: { xs: 0, sm: 18 }, mt: { xs: 6, sm: 0 } }}>
-          {error && (
-            <Box
-              sx={{
-                display: "flex",
-                p: 1,
-                borderRadius: 1,
-                backgroundColor: "#f8d7da",
-                alignItems: "center",
-                mb: 2,
-              }}
-            >
-              <Typography variant="body2" color="inherit">
-                {error}
-              </Typography>
-              <IconButton
-                size="small"
-                onClick={() => setError(null)}
-                sx={{ ml: 1 }}
+        <Box sx={{ mt: 4 }}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={4}>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                }}
               >
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            </Box>
-          )}
+                <Avatar
+                  src={newImage ? URL.createObjectURL(newImage) : profileImage}
+                  sx={{ width: 120, height: 120, mb: 2 }}
+                >
+                  {!newImage && !profileImage && (
+                    <AccountCircleIcon sx={{ fontSize: 60 }} />
+                  )}
+                </Avatar>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  id="image-upload"
+                  style={{ display: "none" }}
+                />
+                <label htmlFor="image-upload">
+                  <Button variant="outlined" component="span" size="small">
+                    Change Photo
+                  </Button>
+                </label>
+                {newImage && (
+                  <Button
+                    variant="text"
+                    color="error"
+                    onClick={() => setNewImage(null)}
+                    size="small"
+                    sx={{ mt: 1 }}
+                  >
+                    Cancel
+                  </Button>
+                )}
+                <Typography variant="caption" color="text.secondary" mt={1}>
+                  JPG, GIF or PNG. Max size 2MB
+                </Typography>
+              </Box>
+            </Grid>
 
-          <TextField
-            fullWidth
-            margin="normal"
-            name="username"
-            label="Username"
-            value={formData.username}
-            onChange={handleInputChange}
-          />
-          <TextField
-            fullWidth
-            margin="normal"
-            name="nationality"
-            label="Nationality"
-            value={formData.nationality || ""}
-            onChange={handleInputChange}
-          />
-          <TextField
-            fullWidth
-            margin="normal"
-            name="mobile"
-            label="Mobile"
-            value={formData.mobile || ""}
-            onChange={handleInputChange}
-          />
-          <TextField
-            fullWidth
-            margin="normal"
-            name="date_of_birth"
-            label="Date of Birth"
-            type="date"
-            value={formData.date_of_birth || ""}
-            onChange={handleInputChange}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-          {/* Display email as read-only field */}
-          <TextField
-            fullWidth
-            margin="normal"
-            name="email"
-            label="Email"
-            value={formData.email || ""}
-            disabled
-            InputProps={{
-              readOnly: true,
-            }}
-            helperText="Email cannot be changed"
-          />
+            <Grid item xs={12} md={8}>
+              {error && (
+                <Box
+                  sx={{
+                    backgroundColor: "error.light",
+                    color: "error.contrastText",
+                    p: 1.5,
+                    borderRadius: 1,
+                    mb: 3,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Typography variant="body2">{error}</Typography>
+                  <IconButton size="small" onClick={() => setError(null)}>
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              )}
 
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              Profile Image
-            </Typography>
-            <Box display="flex" alignItems="center" gap={2}>
-              <Avatar
-                src={newImage ? URL.createObjectURL(newImage) : profileImage}
-                sx={{ width: 60, height: 60 }}
-              >
-                {!newImage && !profileImage && <AccountCircleIcon />}
-              </Avatar>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                id="image-upload"
-                style={{ display: "none" }}
-              />
-              <label htmlFor="image-upload">
-                <Button variant="outlined" component="span">
-                  {profileImage ? "Change Image" : "Upload Image"}
-                </Button>
-              </label>
-              {newImage && (
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Username"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    InputProps={{
+                      startAdornment: (
+                        <BadgeIcon color="action" sx={{ mr: 1 }} />
+                      ),
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Nationality"
+                    name="nationality"
+                    value={formData.nationality || ""}
+                    onChange={handleInputChange}
+                    InputProps={{
+                      startAdornment: (
+                        <PublicIcon color="action" sx={{ mr: 1 }} />
+                      ),
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Mobile"
+                    name="mobile"
+                    value={formData.mobile || ""}
+                    onChange={handleInputChange}
+                    InputProps={{
+                      startAdornment: (
+                        <PhoneAndroidIcon color="action" sx={{ mr: 1 }} />
+                      ),
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Date of Birth"
+                    name="date_of_birth"
+                    type="date"
+                    value={formData.date_of_birth || ""}
+                    onChange={handleInputChange}
+                    InputLabelProps={{ shrink: true }}
+                    InputProps={{
+                      startAdornment: (
+                        <CalendarMonthIcon color="action" sx={{ mr: 1 }} />
+                      ),
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Email"
+                    name="email"
+                    value={formData.email || ""}
+                    disabled
+                    InputProps={{
+                      readOnly: true,
+                      startAdornment: (
+                        <EmailIcon color="action" sx={{ mr: 1 }} />
+                      ),
+                    }}
+                    helperText="Email cannot be changed"
+                  />
+                </Grid>
+              </Grid>
+
+              <Box sx={{ mt: 4, display: "flex", gap: 2 }}>
                 <Button
-                  variant="text"
-                  color="error"
-                  onClick={() => setNewImage(null)}
-                  size="small"
+                  variant="contained"
+                  onClick={handleSubmit}
+                  sx={{ px: 4 }}
+                >
+                  Save Changes
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setNewImage(null);
+                    setError(null);
+                    setSuccessMessage(null);
+                  }}
                 >
                   Cancel
                 </Button>
-              )}
-            </Box>
-            <Typography variant="caption" color="text.secondary">
-              Image update is optional
-            </Typography>
-          </Box>
-
-          <Box sx={{ mt: 4 }}>
-            <Button variant="contained" onClick={handleSubmit} sx={{ mr: 1 }}>
-              Save Changes
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setIsEditing(false);
-                setNewImage(null);
-                setError(null);
-                setSuccessMessage(null);
-              }}
-            >
-              Cancel
-            </Button>
-          </Box>
+              </Box>
+            </Grid>
+          </Grid>
         </Box>
       );
     }
 
     return (
-      <Box sx={{ ml: { xs: 0, sm: 18 }, mt: { xs: 6, sm: 0 } }}>
-        {/* display success message even in view mode */}
+      <Box sx={{ mt: 4 }}>
         {successMessage && (
           <Box
             sx={{
-              display: "flex",
-              p: 1,
+              backgroundColor: "success.light",
+              color: "success.contrastText",
+              p: 1.5,
               borderRadius: 1,
-              backgroundColor: "lightgreen",
+              mb: 3,
+              display: "flex",
+              justifyContent: "space-between",
               alignItems: "center",
-              mb: 2,
             }}
           >
-            <Typography variant="body2" color="inherit">
-              {successMessage}
-            </Typography>
-            <IconButton
-              size="small"
-              onClick={() => setSuccessMessage(null)}
-              sx={{ ml: 1 }}
-            >
+            <Typography variant="body2">{successMessage}</Typography>
+            <IconButton size="small" onClick={() => setSuccessMessage(null)}>
               <CloseIcon fontSize="small" />
             </IconButton>
           </Box>
         )}
 
-        <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-          <Typography
-            variant="h5"
-            component="h2"
-            sx={{ fontWeight: 600, mr: 2 }}
-          >
-            {username}
-          </Typography>
-          <IconButton
-            size="small"
-            onClick={() => setIsEditing(true)}
-            sx={{
-              backgroundColor: "#f0f2ff",
-              "&:hover": { backgroundColor: "#e0e4ff" },
-            }}
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-        </Box>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={4}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <Avatar
+                src={profileImage}
+                sx={{ width: 120, height: 120, mb: 2 }}
+              >
+                {!profileImage && <AccountCircleIcon sx={{ fontSize: 60 }} />}
+              </Avatar>
+              <Button
+                variant="outlined"
+                startIcon={<EditIcon />}
+                onClick={() => setIsEditing(true)}
+                size="small"
+              >
+                Edit Profile
+              </Button>
+            </Box>
+          </Grid>
 
-        <Box
-          sx={{
-            mb: 2,
-            color: "text.secondary",
-            display: "flex",
-            gap: 2,
-            alignItems: "center",
-          }}
-        >
-          {/* email */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              mb: 0.5,
-              color: "text.secondary",
-            }}
-          >
-            <EmailIcon fontSize="small" sx={{ mr: 1 }} />
-            <Typography variant="body1">{email}</Typography>
-          </Box>
-          {/* mobile */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              mb: 0.5,
-              color: "text.secondary",
-            }}
-          >
-            <PhoneAndroidIcon fontSize="small" sx={{ mr: 1 }} />
-            <Typography variant="body1">{mobile}</Typography>
-          </Box>
-        </Box>
-        {/* nationality */}
-        <Box
-          sx={{
-            mb: 2,
-            color: "text.secondary",
-            display: "flex",
-            gap: 2,
-            alignItems: "center",
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              mb: 0.5,
-              color: "text.secondary",
-            }}
-          >
-            <PublicIcon fontSize="small" sx={{ mr: 1 }} />
-            <Typography variant="body1">{nationality}</Typography>
-          </Box>
-          {/* date of birth */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              mb: 0.5,
-              color: "text.secondary",
-            }}
-          >
-            <CalendarMonthIcon fontSize="small" sx={{ mr: 1 }} />
-            <Typography variant="body1">{dob}</Typography>
-          </Box>
-        </Box>
+          <Grid item xs={12} md={8}>
+            <Box sx={{ mb: 3 }}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                <Typography variant="h4" fontWeight={600}>
+                  {username}
+                </Typography>
+                {isVerified && (
+                  <Chip
+                    icon={<VerifiedIcon />}
+                    label="Verified"
+                    color="success"
+                    size="small"
+                    sx={{ ml: 2 }}
+                  />
+                )}
+              </Box>
 
-        <Chip
-          icon={<VerifiedIcon />}
-          label={"Email Verified"}
-          color={"success"}
-          variant={"filled"}
-          sx={{ fontWeight: 500, mt: 1 }}
-        />
+              <Typography variant="body1" color="text.secondary" mb={2}>
+                Member since {date_joined}
+              </Typography>
+            </Box>
 
-        {!isVerified && (
-          <Button
-            variant="text"
-            color="primary"
-            onClick={() => navigate("/verify-email")}
-            sx={{ ml: 2, textTransform: "none", fontWeight: 500 }}
-          >
-            Verify Now
-          </Button>
-        )}
+            <Divider sx={{ my: 2 }} />
+
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <Stack direction="row" alignItems="center" spacing={2} mb={2}>
+                  <EmailIcon color="action" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Email
+                    </Typography>
+                    <Typography>{email}</Typography>
+                  </Box>
+                </Stack>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <Stack direction="row" alignItems="center" spacing={2} mb={2}>
+                  <PhoneAndroidIcon color="action" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Mobile
+                    </Typography>
+                    <Typography>{mobile}</Typography>
+                  </Box>
+                </Stack>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <Stack direction="row" alignItems="center" spacing={2} mb={2}>
+                  <PublicIcon color="action" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Nationality
+                    </Typography>
+                    <Typography>{nationality}</Typography>
+                  </Box>
+                </Stack>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <Stack direction="row" alignItems="center" spacing={2} mb={2}>
+                  <CalendarMonthIcon color="action" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Date of Birth
+                    </Typography>
+                    <Typography>{dob}</Typography>
+                  </Box>
+                </Stack>
+              </Grid>
+            </Grid>
+
+            {!isVerified && (
+              <Button
+                variant="contained"
+                startIcon={<HowToRegIcon />}
+                onClick={() => navigate("/verify-email")}
+                sx={{ mt: 3 }}
+              >
+                Verify Your Email
+              </Button>
+            )}
+          </Grid>
+        </Grid>
       </Box>
     );
   };
@@ -445,154 +474,206 @@ function Profile() {
       sx={{
         minHeight: "100vh",
         background:
-          "linear-gradient(135deg, rgb(11, 36, 147) 0%, rgb(107, 190, 245) 100%)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 2,
-        overflow: "hidden",
+          "linear-gradient(135deg, rgb(56, 49, 78)  0%, rgb(23, 150, 150) 100%)",
+        py: 4,
       }}
       component={motion.div}
-      transition={{ duration: 0.6 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
     >
       <Fade in={!loading} timeout={500}>
-        <Box sx={{ mt: 6, mb: 6, width: "100%", maxWidth: "800px" }}>
+        <Box
+          sx={{
+            width: "100%",
+            maxWidth: "1200px",
+            mx: "auto",
+            px: { xs: 2, sm: 3 },
+          }}
+        >
           <Paper
-            elevation={12}
+            elevation={3}
             sx={{
               borderRadius: 3,
               overflow: "hidden",
-              background: "linear-gradient(to right bottom, #ffffff, #ffffff)",
-              boxShadow: "0 10px 40px rgba(0, 0, 0, 0.1)",
+              backgroundColor: "background.paper",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
             }}
           >
-            {/* Header Banner */}
+            {/* Header with gradient */}
             <Box
               sx={{
-                height: 160,
-                backgroundColor: "#293f61",
+                height: 180,
+                background: "linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%)",
                 position: "relative",
                 display: "flex",
-                flexDirection: "column",
-                justifyContent: "flex-end",
+                alignItems: "flex-end",
                 p: 3,
               }}
             >
               <Typography
-                variant="h4"
+                variant="h3"
                 component="h1"
-                mb={4}
-                align="center"
                 color="white"
-                sx={{
-                  color: "white",
-                  fontWeight: 700,
-                  textShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                }}
+                fontWeight={700}
+                sx={{ textShadow: "0 2px 8px rgba(0,0,0,0.2)" }}
               >
-                Welcome, {username}!
+                My Profile
               </Typography>
             </Box>
 
-            {/* Profile Section */}
-            <Box sx={{ position: "relative", px: 3, pt: 8, pb: 4 }}>
-              <Avatar
-                src={profileImage}
-                alt={`${username}'s profile`}
-                sx={{
-                  width: 120,
-                  height: 120,
-                  border: "4px solid white",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                  position: "absolute",
-                  top: -60,
-                  left: 40,
-                }}
-              >
-                {!profileImage && <AccountCircleIcon sx={{ fontSize: 80 }} />}
-              </Avatar>
-
+            {/* Main content */}
+            <Box sx={{ p: { xs: 2, sm: 4 } }}>
               {renderProfileContent()}
-            </Box>
 
-            <Divider sx={{ mx: 3 }} />
+              <Divider sx={{ my: 4 }} />
 
-            {/* Dashboard Cards */}
-            <Box sx={{ p: 3 }}>
-              <Typography
-                variant="h6"
-                sx={{ mb: 2, fontWeight: 600, color: "text.secondary" }}
-              >
+              {/* Account Overview */}
+              <Typography variant="h5" fontWeight={600} mb={3}>
                 Account Overview
               </Typography>
 
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-                <Card
-                  sx={{
-                    flexGrow: 1,
-                    minWidth: { xs: "100%", sm: "240px" },
-                    borderRadius: 2,
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-                  }}
-                >
-                  <CardContent>
-                    <Typography
-                      variant="subtitle2"
-                      color="text.secondary"
-                      gutterBottom
-                    >
-                      Membership Status
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      {isVerified ? "Active" : "Pending Verification"}
-                    </Typography>
-                  </CardContent>
-                </Card>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Card
+                    sx={{
+                      height: "100%",
+                      borderRadius: 2,
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
+                      transition: "transform 0.3s, box-shadow 0.3s",
+                      "&:hover": {
+                        transform: "translateY(-4px)",
+                        boxShadow: "0 6px 24px rgba(0,0,0,0.1)",
+                      },
+                    }}
+                  >
+                    <CardContent>
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={2}
+                        mb={2}
+                      >
+                        <Box
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: "50%",
+                            bgcolor: "primary.light",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <HowToRegIcon fontSize="small" />
+                        </Box>
+                        <Typography variant="h6" fontWeight={600}>
+                          Membership Status
+                        </Typography>
+                      </Stack>
+                      <Typography variant="body2" color="text.secondary">
+                        {isVerified ? (
+                          <Chip label="Active" color="success" size="small" />
+                        ) : (
+                          <Chip
+                            label="Pending Verification"
+                            color="warning"
+                            size="small"
+                          />
+                        )}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
 
-                <Card
-                  sx={{
-                    flexGrow: 1,
-                    minWidth: { xs: "100%", sm: "240px" },
-                    borderRadius: 2,
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-                  }}
-                >
-                  <CardContent>
-                    <Typography
-                      variant="subtitle2"
-                      color="text.secondary"
-                      gutterBottom
-                    >
-                      Account Type
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      Standard
-                    </Typography>
-                  </CardContent>
-                </Card>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Card
+                    sx={{
+                      height: "100%",
+                      borderRadius: 2,
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
+                      transition: "transform 0.3s, box-shadow 0.3s",
+                      "&:hover": {
+                        transform: "translateY(-4px)",
+                        boxShadow: "0 6px 24px rgba(0,0,0,0.1)",
+                      },
+                    }}
+                  >
+                    <CardContent>
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={2}
+                        mb={2}
+                      >
+                        <Box
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: "50%",
+                            bgcolor: "secondary.light",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <BadgeIcon fontSize="small" />
+                        </Box>
+                        <Typography variant="h6" fontWeight={600}>
+                          Account Type
+                        </Typography>
+                      </Stack>
+                      <Typography variant="body2" color="text.secondary">
+                        <Chip label="Standard" color="info" size="small" />
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
 
-                <Card
-                  sx={{
-                    flexGrow: 1,
-                    minWidth: { xs: "100%", sm: "240px" },
-                    borderRadius: 2,
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-                  }}
-                >
-                  <CardContent>
-                    <Typography
-                      variant="subtitle2"
-                      color="text.secondary"
-                      gutterBottom
-                    >
-                      Member Since
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      {date_joined}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Box>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Card
+                    sx={{
+                      height: "100%",
+                      borderRadius: 2,
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
+                      transition: "transform 0.3s, box-shadow 0.3s",
+                      "&:hover": {
+                        transform: "translateY(-4px)",
+                        boxShadow: "0 6px 24px rgba(0,0,0,0.1)",
+                      },
+                    }}
+                  >
+                    <CardContent>
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={2}
+                        mb={2}
+                      >
+                        <Box
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: "50%",
+                            bgcolor: "success.light",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <CalendarMonthIcon fontSize="small" />
+                        </Box>
+                        <Typography variant="h6" fontWeight={600}>
+                          Member Since
+                        </Typography>
+                      </Stack>
+                      <Typography variant="body2" color="text.secondary">
+                        {date_joined}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
             </Box>
           </Paper>
         </Box>
