@@ -4,6 +4,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
+  IconButton,
   Typography,
   Paper,
   Button,
@@ -12,6 +13,7 @@ import {
   Card,
   Grid,
   Chip,
+  Divider,
 } from "@mui/material";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import QuizIcon from "@mui/icons-material/Quiz";
@@ -20,6 +22,13 @@ import TimelineIcon from "@mui/icons-material/Timeline";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import AssessmentIcon from "@mui/icons-material/Assessment";
+import DeleteIcon from "@mui/icons-material/Delete";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
+import Snackbar from "@mui/material/Snackbar";
 import { useAuth } from "../context/AuthContext";
 
 function PreviousExam() {
@@ -30,6 +39,13 @@ function PreviousExam() {
   const [error, setError] = useState(null);
   const { token } = useAuth();
   const navigate = useNavigate();
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   useEffect(() => {
     fetchUserData();
@@ -89,6 +105,54 @@ function PreviousExam() {
 
   const handleViewExamDetails = (sessionId) => {
     navigate(`/exam-review/${sessionId}`);
+  };
+
+  const handleDeleteClick = (session) => {
+    console.log("Delete button clicked for session:", session);
+    setSelectedSession(session);
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setSelectedSession(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      const response = await axios.delete(
+        `http://127.0.0.1:8000/api/take-exam/delete-session/${selectedSession.id}/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log("response from delete exam session:", response.data);
+
+      setExamSessions((prevSessions) =>
+        prevSessions.filter((session) => session.id !== selectedSession.id)
+      );
+
+      setSnackbar({
+        open: true,
+        message: "Exam session deleted successfully",
+        severity: "success",
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: "Failed to delete exam session",
+        severity: "error",
+      });
+      console.error("Error deleting exam session:", error);
+    } finally {
+      handleCloseDialog();
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   if (loading) {
@@ -153,8 +217,29 @@ function PreviousExam() {
                   },
                 }}
               >
-                <Typography variant="h6" gutterBottom>
+                <Typography
+                  sx={{
+                    mb: 2,
+                    justifyContent: "space-between",
+                    display: "flex",
+                  }}
+                  variant="h6"
+                  gutterBottom
+                >
                   {session.exam_title}
+                  <IconButton
+                    aria-label="delete"
+                    onClick={() => handleDeleteClick(session)}
+                    size="small"
+                    sx={{
+                      color: "error.main",
+                      "&:hover": {
+                        backgroundColor: "error.lighter",
+                      },
+                    }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
                 </Typography>
                 <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
                   <Chip
@@ -307,6 +392,132 @@ function PreviousExam() {
           ))}
         </Grid>
       )}
+
+      {/* Delete Confirmation Dialog */}
+
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+            maxWidth: "400px",
+            width: "100%",
+            background: "linear-gradient(to bottom, #ffffff, #f8f9fa)",
+            overflow: "hidden",
+          },
+        }}
+      >
+        <Box
+          sx={{
+            width: "100%",
+            height: "8px",
+            bgcolor: "error.main",
+          }}
+        />
+
+        <DialogTitle
+          id="delete-dialog-title"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            pb: 1,
+            pt: 2.5,
+          }}
+        >
+          <Typography variant="h6" fontWeight="600">
+            Delete Exam Session
+          </Typography>
+        </DialogTitle>
+        <Divider sx={{ width: 1, bgcolor: "divider", mx: "auto" }} />
+
+        <DialogContent sx={{ pt: 1, pb: 2 }}>
+          <DialogContentText
+            id="delete-dialog-description"
+            sx={{
+              color: "text.secondary",
+              fontSize: "0.95rem",
+            }}
+          >
+            Are you sure you want to delete the exam session
+            <Box
+              component="span"
+              sx={{
+                fontWeight: "bold",
+                color: "text.primary",
+                display: "block",
+                my: 1,
+                p: 1.5,
+                bgcolor: "background.paper",
+                borderRadius: 1,
+                border: "1px dashed",
+                borderColor: "divider",
+                textAlign: "center",
+              }}
+            >
+              "{selectedSession?.exam_title}"
+            </Box>
+            This action is permanent and cannot be undone. All related data
+            including scores and answers will be permanently removed.
+          </DialogContentText>
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
+          <Button
+            onClick={handleCloseDialog}
+            variant="outlined"
+            startIcon={<CancelIcon />}
+            sx={{
+              borderRadius: 2,
+              px: 2.5,
+              fontWeight: 500,
+              textTransform: "none",
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmDelete}
+            color="error"
+            variant="contained"
+            startIcon={<DeleteIcon />}
+            disableElevation
+            sx={{
+              borderRadius: 2,
+              px: 2.5,
+              ml: 1.5,
+              fontWeight: 500,
+              textTransform: "none",
+              "&:hover": {
+                bgcolor: "error.dark",
+                boxShadow: "0 4px 12px rgba(211, 47, 47, 0.3)",
+              },
+            }}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

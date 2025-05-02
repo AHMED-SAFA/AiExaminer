@@ -470,3 +470,24 @@ class ExamSessionDetailAPIView(generics.RetrieveAPIView):
         }
 
         return Response(response_data)
+
+
+class DeleteExamSessionView(generics.DestroyAPIView):
+    """View to delete an exam session"""
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return ExamSession.objects.filter(user=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.user != request.user:
+            return Response(
+                {"error": "You don't have permission to delete this exam session"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        self.perform_destroy(instance)
+        return Response(
+            {"message": "Exam session deleted successfully"},
+            status=status.HTTP_200_OK
+        )

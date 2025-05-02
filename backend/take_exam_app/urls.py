@@ -8,6 +8,7 @@ from .views import (
     ProcessExamPDFView,
     DisplayUserExamSessionsView,
     ExamSessionDetailAPIView,
+    DeleteExamSessionView,
 )
 
 urlpatterns = [
@@ -32,6 +33,11 @@ urlpatterns = [
         "session-detail/<int:session_id>/",
         ExamSessionDetailAPIView.as_view(),
         name="session-detail",
+    ),
+    path(
+        "delete-session/<int:pk>/",
+        DeleteExamSessionView.as_view(),
+        name="delete-session",
     ),
  
 ]
