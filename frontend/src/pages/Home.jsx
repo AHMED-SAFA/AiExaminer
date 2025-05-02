@@ -16,18 +16,23 @@ import {
   Dialog,
   DialogContent,
   DialogActions,
+  DialogContentText,
+  DialogTitle,
+  Slide,
+  IconButton,
   Divider,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useState, forwardRef } from "react";
 import axios from "axios";
 import CreateExamModal from "./CreateExamPage/CreateExamModal";
 import { motion } from "framer-motion";
 import AddIcon from "@mui/icons-material/Add";
 import AssignmentIcon from "@mui/icons-material/Assignment";
+import DeleteIcon from "@mui/icons-material/Delete";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import GradeIcon from "@mui/icons-material/Grade";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -40,7 +45,10 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import IsoIcon from "@mui/icons-material/Iso";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
-import VisibilityIcon from "@mui/icons-material/Visibility";
+
+const DeleteModalTransition = forwardRef(function Transition(props, ref) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
 
 const Home = () => {
   const { token } = useAuth();
@@ -61,6 +69,25 @@ const Home = () => {
     examId: null,
     extractedExamId: null,
   });
+  const [deleteDialog, setDeleteDialog] = useState({
+    open: false,
+    examId: null,
+  });
+
+  const handleDeleteDialogOpen = (event, examId) => {
+    event.stopPropagation();
+    setDeleteDialog({
+      open: true,
+      examId: examId,
+    });
+  };
+
+  const handleDeleteDialogClose = () => {
+    setDeleteDialog({
+      open: false,
+      examId: null,
+    });
+  };
 
   useEffect(() => {
     fetchExams();
@@ -132,16 +159,15 @@ const Home = () => {
         }
       );
       console.log("Exam created:", response.data);
-      handleModalClose(); // Close modal after successful creation
+      handleModalClose();
       setSnackbar({
         open: true,
         message: "Exam created successfully!",
         severity: "success",
       });
-      await fetchExams(); // Fetch updated exam list
+      await fetchExams();
     } catch (error) {
       console.error("Error creating exam:", error);
-      // Show user-friendly error message
       let errorMessage = "Failed to create exam. Please try again.";
       if (error.response?.data?.error) {
         if (error.response.data.error.includes("insufficient_quota")) {
@@ -155,8 +181,44 @@ const Home = () => {
     }
   };
 
+  const handleDeleteExam = async () => {
+    const examId = deleteDialog.examId;
+
+    if (!examId) return;
+
+    try {
+      const response = await axios.delete(
+        `http://127.0.0.1:8000/api/exam/delete-exam/${examId}/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log("Exam deleted:", response.data);
+      setSnackbar({
+        open: true,
+        message: "Exam deleted successfully!",
+        severity: "success",
+      });
+      await fetchExams();
+    } catch (error) {
+      console.error("Error deleting exam:", error);
+      let errorMessage = "Failed to delete exam. Please try again.";
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: "error",
+      });
+    } finally {
+      handleDeleteDialogClose();
+    }
+  };
+
   const handleGenerateOptions = async (examId) => {
-    // Set loading state for this specific exam
     setGeneratingOptions((prev) => ({ ...prev, [examId]: true }));
     console.log("Generating options for exam ID:", examId);
 
@@ -176,8 +238,6 @@ const Home = () => {
         message: "Successfully generated options and answers!",
         severity: "success",
       });
-
-      // Refresh exam list to show updated status
       await fetchExams();
     } catch (error) {
       console.error("Error generating options:", error);
@@ -195,7 +255,6 @@ const Home = () => {
         severity: "error",
       });
     } finally {
-      // Clear loading state
       setGeneratingOptions((prev) => ({ ...prev, [examId]: false }));
     }
   };
@@ -245,12 +304,13 @@ const Home = () => {
       return;
     }
 
-    // Open confirmation dialog instead of navigating directly
     setExamStartDialog({
       open: true,
       examId,
       extractedExamId,
     });
+    console.log("Exam ID from handleExamClick:", examId);
+    console.log("Extracted Exam ID from handleExamClick:", extractedExamId);
   };
 
   const handleStartExam = () => {
@@ -367,8 +427,31 @@ const Home = () => {
                   onClick={() => handleExamClick(exam.id, exam.output_pdf)}
                 >
                   <CardContent>
-                    <Typography variant="h6" noWrap gutterBottom>
+                    <Typography
+                      variant="h6"
+                      color="primary.dark"
+                      fontWeight="bold"
+                      sx={{
+                        mb: 2,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
                       {exam.title}
+                      <IconButton
+                        aria-label="delete"
+                        size="small"
+                        onClick={(e) => handleDeleteDialogOpen(e, exam.id)}
+                        sx={{
+                          color: "error.main",
+                          "&:hover": {
+                            backgroundColor: "error.lighter",
+                          },
+                        }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
                     </Typography>
                     <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                       <AccessTimeIcon fontSize="small" sx={{ mr: 1 }} />
@@ -381,7 +464,7 @@ const Home = () => {
                       <GradeIcon fontSize="small" sx={{ mr: 1 }} />
                       <Typography variant="body2">
                         Total: {exam.total_marks} marks (
-                        {exam.each_question_marks} per question)
+                        {exam.each_question_marks} marks per question)
                       </Typography>
                     </Box>
 
@@ -405,7 +488,7 @@ const Home = () => {
                       <IsoIcon fontSize="small" sx={{ mr: 1 }} />
                       <Typography variant="body2">
                         {exam.minus_marking_value
-                          ? exam.minus_marking_value + " each wrong"
+                          ? "-" + exam.minus_marking_value + " each wrong"
                           : "No minus marking"}
                       </Typography>
                     </Box>
@@ -708,6 +791,134 @@ const Home = () => {
             }}
           >
             Start Exam
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* delete dialog */}
+      <Dialog
+        open={deleteDialog.open}
+        TransitionComponent={DeleteModalTransition}
+        keepMounted
+        onClose={handleDeleteDialogClose}
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            overflow: "hidden",
+            maxWidth: "450px",
+          },
+        }}
+      >
+        {/* Custom Header with Warning Icon */}
+        <Box
+          sx={{
+            bgcolor: "error.main",
+            color: "error.contrastText",
+            p: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <WarningIcon sx={{ mr: 1.5, fontSize: "1.75rem" }} />
+            <Typography variant="h6" component="h2" fontWeight="bold">
+              Delete Exam
+            </Typography>
+          </Box>
+          <IconButton
+            edge="end"
+            color="inherit"
+            onClick={handleDeleteDialogClose}
+            aria-label="close"
+          >
+            <CancelIcon />
+          </IconButton>
+        </Box>
+
+        <DialogContent sx={{ p: 3, pt: 2.5 }}>
+          {exams.map((exam) => {
+            if (exam.id === deleteDialog.examId) {
+              return (
+                <Box key={exam.id} sx={{ mb: 2 }}>
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight="bold"
+                    gutterBottom
+                  >
+                    Exam: {exam.title}
+                  </Typography>
+                  <Divider sx={{ my: 1.5 }} />
+                </Box>
+              );
+            }
+            return null;
+          })}
+
+          <Box
+            sx={{
+              mt: 1,
+              p: 2,
+              bgcolor: "error.lighter",
+              borderRadius: 1,
+              border: 1,
+              borderColor: "error.light",
+              display: "flex",
+              alignItems: "flex-start",
+            }}
+          >
+            <ErrorOutlineIcon color="error" sx={{ mr: 1.5, mt: 0.25 }} />
+            <Box>
+              <Typography
+                variant="body2"
+                fontWeight="medium"
+                color="error.dark"
+                gutterBottom
+              >
+                This action cannot be undone.
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Deleting this exam will permanently remove all associated
+                questions, answers, and any student results.
+              </Typography>
+            </Box>
+          </Box>
+        </DialogContent>
+
+        <DialogActions
+          sx={{
+            px: 3,
+            py: 2,
+            bgcolor: "grey.50",
+            borderTop: 1,
+            borderColor: "grey.200",
+            justifyContent: "space-between",
+          }}
+        >
+          <Button
+            onClick={handleDeleteDialogClose}
+            color="inherit"
+            variant="outlined"
+            startIcon={<CancelIcon />}
+            sx={{ borderColor: "grey.400", color: "text.primary" }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteExam}
+            color="error"
+            variant="contained"
+            startIcon={<DeleteIcon />}
+            sx={{
+              px: 2,
+              boxShadow: 1,
+              "&:hover": {
+                bgcolor: "error.dark",
+                boxShadow: 2,
+              },
+            }}
+          >
+            Delete Permanently
           </Button>
         </DialogActions>
       </Dialog>

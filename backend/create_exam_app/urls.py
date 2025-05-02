@@ -3,6 +3,7 @@ from .views import (
     UserExamListView,
     CreateExamView,
     GenerateAnswerOptionsView,
+    DeleteExamView,
 )
 
 
@@ -14,4 +15,5 @@ urlpatterns = [
         GenerateAnswerOptionsView.as_view(),
         name="generate-options-answers",
     ),
+     path('delete-exam/<int:exam_id>/', DeleteExamView.as_view(), name='delete-exam'),
 ]

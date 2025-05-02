@@ -1,16 +1,14 @@
 import time
 from rest_framework import status, generics
 from rest_framework.response import Response
-from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.db import transaction
-from django.utils import timezone
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
-from .models import Exam, Question, Option, ExamSession, UserAnswer
+from .models import Exam, Question, Option
 from .serializers import (
     ExamCreateSerializer,
     ExamDetailSerializer,
@@ -22,7 +20,6 @@ from django.conf import settings
 import PyPDF2
 from datetime import datetime
 import pytz
-import io
 import os
 import json
 import re
@@ -282,7 +279,6 @@ class GenerateAnswerOptionsView(APIView):
             return []
 
     def identify_correct_answers(self, question_text, options):
-                    
         """Identify correct answer using Gemini with improved reliability"""
         try:
             if not options:
@@ -320,16 +316,16 @@ class GenerateAnswerOptionsView(APIView):
 
             # Alternate approach using likelihood scores from the model
             scores = []
-            
+
             for idx, opt in enumerate(options):
                 try:
                     alt_prompt = f"""Question: {question_text}
                     Is this answer correct? {opt['option_text']}
                     Respond with only 'yes' or 'no'."""
-                    
+
                     resp = model.generate_content(alt_prompt)
                     resp_text = resp.text.strip().lower()
-                    
+
                     if "yes" in resp_text:
                         scores.append((idx, 1.0))
                     elif "no" in resp_text:
@@ -338,17 +334,17 @@ class GenerateAnswerOptionsView(APIView):
                         scores.append((idx, 0.5))  # Uncertain
                 except Exception:
                     scores.append((idx, 0.5))  # Default to uncertain on error
-                    
+
             # Sort by confidence score
             scores.sort(key=lambda x: x[1], reverse=True)
-            
+
             if scores:
                 return scores[0][0]  # Return index with highest score
 
             # Default to first option if all methods fail
             print("All methods failed, defaulting to first option")
             return 0
-            
+
         except Exception as e:
             print(f"Error identifying correct answer: {str(e)}")
             return 0
@@ -434,7 +430,7 @@ class GenerateAnswerOptionsView(APIView):
                 content.append(Spacer(1, 12))
 
             # Add footer with generation info
-            generation_time = datetime.now(pytz.GMT).strftime("%Y-%m-%d %H:%M:%S GMT")
+            generation_time = datetime.now(pytz.UTC).strftime("%Y-%m-%d %H:%M:%S GMT")
             content.append(
                 Paragraph(f"Generated on: {generation_time}", styles["Normal"])
             )
@@ -509,7 +505,7 @@ class GenerateAnswerOptionsView(APIView):
         except Exception as e:
             print(f"Error extracting questions with options: {str(e)}")
             return []
-    
+
     def post(self, request):
 
         exam_id = request.data.get("exam_id")
@@ -558,16 +554,23 @@ class GenerateAnswerOptionsView(APIView):
                 # Extract questions from content if they don't exist yet
                 if exam.questions.count() == 0:
                     # For formats with options, use special extraction method
-                    if content_format in ["questions_with_options", "questions_with_options_answers"]:
-                        questions_data = self.extract_questions_with_options(exam_content)
-                        
+                    if content_format in [
+                        "questions_with_options",
+                        "questions_with_options_answers",
+                    ]:
+                        questions_data = self.extract_questions_with_options(
+                            exam_content
+                        )
+
                         if not questions_data:
                             # Fall back to regular extraction
                             questions_data = self.extract_questions(exam_content)
-                            
+
                         if not questions_data:
-                            raise ValueError("No questions could be extracted from the document")
-                            
+                            raise ValueError(
+                                "No questions could be extracted from the document"
+                            )
+
                         for question_data in questions_data:
                             # Create question
                             question = Question.objects.create(
@@ -576,7 +579,7 @@ class GenerateAnswerOptionsView(APIView):
                                 has_options=True,
                             )
                             questions_created += 1
-                            
+
                             # If options are provided in the extracted data, create them
                             if "options" in question_data and question_data["options"]:
                                 for option_data in question_data["options"]:
@@ -592,7 +595,9 @@ class GenerateAnswerOptionsView(APIView):
                         questions_data = self.extract_questions(exam_content)
 
                         if not questions_data:
-                            raise ValueError("No questions could be extracted from the document")
+                            raise ValueError(
+                                "No questions could be extracted from the document"
+                            )
 
                         for question_data in questions_data:
                             # Create question
@@ -611,7 +616,7 @@ class GenerateAnswerOptionsView(APIView):
                         options_data = self.generate_options_and_answers(
                             question.question_text, exam.mcq_options_count
                         )
-                        
+
                         if options_data:
                             for option_data in options_data:
                                 Option.objects.create(
@@ -621,17 +626,17 @@ class GenerateAnswerOptionsView(APIView):
                                     is_ai_generated=True,
                                 )
                                 options_created += 1
-                            
+
                             question.has_options = True
                             question.save()
-                    
-                    # Case 2: If format is questions_with_answers, generate options that include 
+
+                    # Case 2: If format is questions_with_answers, generate options that include
                     # the answer --ok
                     elif content_format == "questions_with_answers":
                         options_data = self.generate_options_and_answers(
                             question.question_text, exam.mcq_options_count
                         )
-                        
+
                         if options_data:
                             for option_data in options_data:
                                 Option.objects.create(
@@ -641,15 +646,15 @@ class GenerateAnswerOptionsView(APIView):
                                     is_ai_generated=True,
                                 )
                                 options_created += 1
-                            
+
                             question.has_options = True
                             question.save()
-                    
-                    # Case 3: If format is questions_with_options, ensure options are extracted 
+
+                    # Case 3: If format is questions_with_options, ensure options are extracted
                     # and generate answers --ok
                     elif content_format == "questions_with_options":
                         options = list(question.options.all())
-                        
+
                         # If no options exist yet, try to extract them directly for this question
                         if not options:
                             prompt = f"""Extract the multiple choice options for this question:
@@ -668,16 +673,18 @@ class GenerateAnswerOptionsView(APIView):
                             }}
                             
                             Include ONLY the JSON in your response."""
-                            
+
                             try:
                                 response = model.generate_content(prompt)
                                 response_text = response.text.strip()
-                                
-                                json_match = re.search(r"({.*})", response_text, re.DOTALL)
+
+                                json_match = re.search(
+                                    r"({.*})", response_text, re.DOTALL
+                                )
                                 if json_match:
                                     json_str = json_match.group(1)
                                     options_data = json.loads(json_str)
-                                    
+
                                     # Create options in database
                                     for option_data in options_data.get("options", []):
                                         Option.objects.create(
@@ -687,37 +694,43 @@ class GenerateAnswerOptionsView(APIView):
                                             is_ai_generated=False,
                                         )
                                         options_created += 1
-                                    
+
                                     # Refresh options list
                                     options = list(question.options.all())
                                     question.has_options = True
                                     question.save()
                             except Exception as e:
-                                print(f"Error extracting options for question: {str(e)}")
-                        
+                                print(
+                                    f"Error extracting options for question: {str(e)}"
+                                )
+
                         # Now identify correct answer for the options
                         if options and not any(opt.is_correct for opt in options):
                             # Use AI to identify the correct answer
-                            options_list = [{"option_text": opt.option_text} for opt in options]
-                            
+                            options_list = [
+                                {"option_text": opt.option_text} for opt in options
+                            ]
+
                             correct_index = self.identify_correct_answers(
                                 question.question_text,
                                 options_list,
                             )
-                            
+
                             # Mark the correct option
                             if 0 <= correct_index < len(options):
                                 options[correct_index].is_correct = True
                                 options[correct_index].save()
                                 answers_generated += 1
-                            
+
                         # If still no options, generate them along with answers
                         if not options:
-                            print(f"No options found or extracted for question '{question.question_text}', generating new ones")
+                            print(
+                                f"No options found or extracted for question '{question.question_text}', generating new ones"
+                            )
                             options_data = self.generate_options_and_answers(
                                 question.question_text, exam.mcq_options_count
                             )
-                            
+
                             if options_data:
                                 for option_data in options_data:
                                     Option.objects.create(
@@ -729,11 +742,11 @@ class GenerateAnswerOptionsView(APIView):
                                     options_created += 1
                                     if option_data["is_correct"]:
                                         answers_generated += 1
-                                
+
                                 question.has_options = True
                                 question.save()
-                    
-                    # Case 4: If format is questions_with_options_answers, just save what's 
+
+                    # Case 4: If format is questions_with_options_answers, just save what's
                     # already there
                     elif content_format == "questions_with_options_answers":
                         # Double check that options and correct answers are properly saved
@@ -783,4 +796,42 @@ class GenerateAnswerOptionsView(APIView):
             return Response(
                 {"error": f"Error processing exam content: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+class DeleteExamView(APIView):
+    """View to delete an exam"""
+    
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, exam_id):
+        try:
+            # Get the exam and verify ownership
+            exam = get_object_or_404(Exam, pk=exam_id, created_by=request.user)
+            
+            # Delete associated files
+            if exam.pdf_file:
+                if os.path.exists(exam.pdf_file.path):
+                    os.remove(exam.pdf_file.path)
+            
+            if exam.output_pdf:
+                if os.path.exists(exam.output_pdf.path):
+                    os.remove(exam.output_pdf.path)
+            
+            # Delete the exam (this will cascade delete related questions and options)
+            exam.delete()
+            
+            return Response(
+                {"message": "Exam deleted successfully"},
+                status=status.HTTP_204_NO_CONTENT
+            )
+            
+        except Exam.DoesNotExist:
+            return Response(
+                {"error": "Exam not found or you don't have permission to delete it"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Error deleting exam: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
