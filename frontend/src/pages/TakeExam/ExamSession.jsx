@@ -29,14 +29,11 @@ import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import ClearIcon from "@mui/icons-material/Clear";
 
 const ExamSession = () => {
   const { examId } = useParams();
   const { token } = useAuth();
   const navigate = useNavigate();
-
-  // State for exam details and questions
   const [exam, setExam] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -558,13 +555,19 @@ const ExamSession = () => {
               {/* Clear Answer Button - only show if an answer is selected */}
               {selectedAnswers[questions[currentQuestion].id] && (
                 <IconButton
-                  color="default"
                   onClick={() => clearAnswer(questions[currentQuestion].id)}
                   size="small"
-                  sx={{ ml: 2 }}
-                  title="Clear answer"
+                  sx={{
+                    ml: 2,
+                    color: "white",
+                    "&:hover": { color: "error.dark" },
+                    "&:focus": { color: "error.dark" },
+                    "&:active": { color: "error.dark" },
+                    backgroundColor: "error.light",
+                    borderRadius: 1,
+                  }}
                 >
-                  <ClearIcon />
+                  Clear
                 </IconButton>
               )}
             </Box>

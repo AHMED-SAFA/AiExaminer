@@ -1,8 +1,9 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect } from "react";
+import { useState, useEffect, forwardRef } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
+  Slide,
   Box,
   IconButton,
   Typography,
@@ -31,6 +32,9 @@ import DialogTitle from "@mui/material/DialogTitle";
 import Snackbar from "@mui/material/Snackbar";
 import { useAuth } from "../context/AuthContext";
 
+const DeleteModalTransition = forwardRef(function Transition(props, ref) {
+  return <Slide direction="down" ref={ref} {...props} />;
+});
 function PreviousExam() {
   const [examSessions, setExamSessions] = useState([]);
   const [, setUserData] = useState(null);
@@ -96,10 +100,10 @@ function PreviousExam() {
     }
   };
 
-  const getScoreColor = (score) => {
-    if (score >= 80) return "success";
-    if (score >= 60) return "info";
-    if (score >= 40) return "warning";
+  const getScoreColor = (score, totalMarks) => {
+    if (score >= totalMarks * 0.8) return "success";
+    if (score >= totalMarks * 0.4 && score < totalMarks * 0.8) return "warning";
+    if (score < totalMarks * 0.4) return "error";
     return "error";
   };
 
@@ -245,7 +249,7 @@ function PreviousExam() {
                   <Chip
                     icon={<TimelineIcon />}
                     label={`Score: ${session.score}`}
-                    color={getScoreColor(session.score)}
+                    color={getScoreColor(session.score, session.total_marks)}
                   />
                   <Chip
                     icon={<QuizIcon />}
@@ -301,6 +305,15 @@ function PreviousExam() {
                     }}
                   />
                 </Box>
+                <Typography
+                  variant="body2"
+                  sx={{ mb: 2, color: "error.main" }}
+                  color="text.secondary"
+                >
+                  {getScoreColor(session.score, session.total_marks) === "error"
+                    ? "[You need to improve your score. Please review the exam.]"
+                    : ""}
+                </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Completed on: {session.completion_date}
                 </Typography>
@@ -400,6 +413,8 @@ function PreviousExam() {
         onClose={handleCloseDialog}
         aria-labelledby="delete-dialog-title"
         aria-describedby="delete-dialog-description"
+        TransitionComponent={DeleteModalTransition}
+        keepMounted
         PaperProps={{
           sx: {
             borderRadius: 2,

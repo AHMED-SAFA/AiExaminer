@@ -237,8 +237,6 @@ class GenerateAISuggestions(APIView):
 
             Output Format:
 
-            Top Weaknesses: [Identify 1–2 key issues from the data, e.g., "High unanswered questions suggest time pressure."]
-
             Performance Tips:
 
             [Suggestion 1: Focus on weak topics, e.g., "Review [Topic X]—lowest correct answer rate."]
