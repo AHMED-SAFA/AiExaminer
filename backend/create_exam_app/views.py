@@ -15,18 +15,17 @@ from .serializers import (
 )
 from rest_framework.views import APIView
 import google.generativeai as genai
-import openai
 from django.conf import settings
 import PyPDF2
-from datetime import datetime
-import pytz
 import os
 import json
 import re
+import requests
 
-openai.api_key = settings.OPENAI_API_KEY
 genai.configure(api_key=settings.GEMINI_API_KEY)
 model = genai.GenerativeModel("gemini-1.5-flash")
+DEEPSEEK_API_KEY = settings.DEEPSEEK_API_KEY
+DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 
 
 class CreateExamView(APIView):
@@ -105,12 +104,48 @@ class GenerateAnswerOptionsView(APIView):
         else:
             raise ValueError(f"Unsupported file format: {file_ext}")
 
+    def detect_language(self, text_sample):
+        """Detect if text is primarily in Bangla, English, or mixed"""
+
+        try:
+            prompt = f"""Analyze this text and determine its language.
+            
+            Text sample:
+            {text_sample[:1000]}
+            
+            Respond with one of these exact options:
+            - "english" - if the content is primarily in English
+            - "bangla" - if the content is primarily in Bangla/Bengali
+            - "mixed" - if the content contains substantial amounts of both Bangla and English
+            
+            Return only one of these three values without any additional text."""
+
+            response = model.generate_content(prompt)
+            language = response.text.strip().lower()
+
+            print(f"Language detection result: {language}")
+
+            if "bangla" in language:
+                return "bangla"
+            elif "mixed" in language:
+                return "mixed"
+            else:
+                return "english"
+
+        except Exception as e:
+            print(f"Error detecting language: {str(e)}")
+            return "english"
+
     def analyze_questions(self, exam_content):
-        """Analyze the exam content to determine if it contains options or answers"""
+        """Analyze the exam content to determine if it contains options or answers and detect language"""
         try:
             # Limit content length but ensure we have enough context
             content_sample = exam_content[:5000]
 
+            # First detect language
+            language = self.detect_language(content_sample)
+
+            # Then analyze format
             prompt = f"""Analyze this exam content and determine its format.
             
             Content sample:
@@ -128,30 +163,40 @@ class GenerateAnswerOptionsView(APIView):
             analysis = response.text.strip().lower()
 
             print(f"Content format analysis: {analysis}")
+            print(f"Content language: {language}")
 
+            # Return both format and language
+            format_result = "questions_only"
             if "questions_with_options_answers" in analysis:
-                return "questions_with_options_answers"
+                format_result = "questions_with_options_answers"
             elif "questions_with_options" in analysis:
-                return "questions_with_options"
+                format_result = "questions_with_options"
             elif "questions_with_answers" in analysis:
-                return "questions_with_answers"
-            else:
-                return "questions_only"
+                format_result = "questions_with_answers"
+
+            return format_result, language
 
         except Exception as e:
             print(f"Error analyzing questions: {str(e)}")
-            return "questions_only"
+            return "questions_only", "english"
 
-    def extract_questions(self, exam_content):
-        """Extract questions using Gemini with robust error handling"""
+    def extract_questions(self, exam_content, language):
+        """Extract questions using Gemini with robust error handling and language support"""
         try:
             # Limit content but take enough to capture multiple questions
             content_sample = exam_content[:7000]
+
+            language_instruction = ""
+            if language == "bangla":
+                language_instruction = "Extract the questions while preserving the original Bangla language."
+            elif language == "mixed":
+                language_instruction = "Extract the questions, preserving both Bangla and English text as they appear."
 
             prompt = f"""Extract all questions from this exam content.
             
             The questions might be numbered or bulleted. Randomize the serials of questions.
             Try to identify each distinct question.
+            {language_instruction}
             Format your response as strict JSON with this structure:
             {{
                 "questions": [
@@ -209,14 +254,30 @@ class GenerateAnswerOptionsView(APIView):
             print(f"Fallback extraction failed: {str(e)}")
             return []
 
-    def generate_options_and_answers(self, question_text, options_count):
-        """Generate options using Gemini with improved prompt for reliable JSON"""
+    def generate_options_and_answers(self, question_text, options_count, language):
+        """Generate options using Gemini with improved prompt for reliable JSON and language support"""
         try:
+            language_instruction = ""
+            if language == "bangla":
+                language_instruction = (
+                    "Create the options in Bangla language to match the question."
+                )
+            elif language == "mixed":
+                # Check if the question is primarily Bangla or English
+                if self.detect_language(question_text) == "bangla":
+                    language_instruction = (
+                        "Create the options in Bangla language to match the question."
+                    )
+                else:
+                    language_instruction = "Create the options in the same language as the question (either English or Bangla)."
+
             prompt = f"""Create exactly {options_count} multiple choice options for 
             this question with one correct answer. Randomize the correct options or 
             answer.
             
             Question: {question_text}
+            
+            {language_instruction}
 
             Format your response as strict JSON with this structure:
             {{
@@ -229,7 +290,7 @@ class GenerateAnswerOptionsView(APIView):
             
             Requirements:
             1. Exactly one option (Set randomly among {options_count} options)
-               must be marked as correct (is_correct: true)
+            must be marked as correct (is_correct: true)
             2. All other options must be marked as incorrect (is_correct: false)
             3. Include exactly {options_count} options total
             4. Return ONLY the JSON with no explanations or additional text
@@ -278,186 +339,21 @@ class GenerateAnswerOptionsView(APIView):
             print(f"Error generating options: {str(e)}")
             return []
 
-    def identify_correct_answers(self, question_text, options):
-        """Identify correct answer using Gemini with improved reliability"""
+    def extract_questions_with_options(self, exam_content, language):
+        """Extract questions and their options using Gemini with language support"""
         try:
-            if not options:
-                print("No options provided to identify_correct_answers")
-                return 0
-
-            # Format options for the prompt
-            options_text = "\n".join(
-                [f"{idx+1}. {opt['option_text']}" for idx, opt in enumerate(options)]
-            )
-
-            prompt = f"""Question: {question_text}
-
-            Options:
-            {options_text}
-
-            Based on your knowledge, which option number contains the correct answer?
-            Respond with ONLY the number (1, 2, 3, etc.) of the correct option.
-            Do not include any explanation or additional text in your response."""
-
-            response = model.generate_content(prompt)
-            answer_text = response.text.strip()
-
-            print(f"Correct answer identification response: {answer_text}")
-
-            # Extract the number
-            match = re.search(r"\d+", answer_text)
-            if match:
-                correct_index = int(match.group()) - 1
-                if 0 <= correct_index < len(options):
-                    return correct_index
-                else:
-                    print(f"Index {correct_index} out of range (0-{len(options)-1})")
-                    return 0
-
-            # Alternate approach using likelihood scores from the model
-            scores = []
-
-            for idx, opt in enumerate(options):
-                try:
-                    alt_prompt = f"""Question: {question_text}
-                    Is this answer correct? {opt['option_text']}
-                    Respond with only 'yes' or 'no'."""
-
-                    resp = model.generate_content(alt_prompt)
-                    resp_text = resp.text.strip().lower()
-
-                    if "yes" in resp_text:
-                        scores.append((idx, 1.0))
-                    elif "no" in resp_text:
-                        scores.append((idx, 0.0))
-                    else:
-                        scores.append((idx, 0.5))  # Uncertain
-                except Exception:
-                    scores.append((idx, 0.5))  # Default to uncertain on error
-
-            # Sort by confidence score
-            scores.sort(key=lambda x: x[1], reverse=True)
-
-            if scores:
-                return scores[0][0]  # Return index with highest score
-
-            # Default to first option if all methods fail
-            print("All methods failed, defaulting to first option")
-            return 0
-
-        except Exception as e:
-            print(f"Error identifying correct answer: {str(e)}")
-            return 0
-
-    def generate_output_pdf(self, exam, questions):
-        """Generate a formatted PDF with questions and answers based on content format"""
-        try:
-            # Create output directory if it doesn't exist
-            output_dir = os.path.join(settings.MEDIA_ROOT, "exam_outputs")
-            os.makedirs(output_dir, exist_ok=True)
-
-            # Generate output filename
-            output_filename = f"exam_{exam.id}_processed_{int(time.time())}.pdf"
-            output_path = os.path.join(output_dir, output_filename)
-
-            # Create PDF document
-            doc = SimpleDocTemplate(output_path, pagesize=letter)
-            styles = getSampleStyleSheet()
-
-            # Define custom styles
-            title_style = ParagraphStyle(
-                "Title",
-                parent=styles["Heading1"],
-                fontSize=16,
-                alignment=1,  # Center alignment
-            )
-
-            question_style = ParagraphStyle(
-                "Question",
-                parent=styles["Normal"],
-                fontSize=12,
-                fontName="Helvetica-Bold",
-            )
-
-            option_style = ParagraphStyle(
-                "Option", parent=styles["Normal"], fontSize=11, leftIndent=20
-            )
-
-            correct_style = ParagraphStyle(
-                "CorrectOption", parent=option_style, textColor=colors.green
-            )
-
-            answer_style = ParagraphStyle(
-                "Answer",
-                parent=styles["Normal"],
-                fontSize=11,
-                textColor=colors.blue,
-                leftIndent=20,
-                fontName="Helvetica-Bold",
-            )
-
-            # Build content
-            content = []
-
-            # Add title
-            content.append(Paragraph(f"Exam: {exam.title}", title_style))
-            content.append(Spacer(1, 12))
-
-            # Add exam format info
-            format_text = f"Format: {'Multiple Choice Exam' if exam.questions.first().has_options else 'Question and Answer Exam'}"
-            content.append(Paragraph(format_text, styles["Normal"]))
-            content.append(Spacer(1, 12))
-
-            # Add questions and options
-            for i, question in enumerate(questions, 1):
-                # Question text
-                content.append(
-                    Paragraph(f"Q{i}. {question.question_text}", question_style)
-                )
-                content.append(Spacer(1, 6))
-
-                # Handle options if they exist
-                options = question.options.all()
-                if options.exists():
-                    for j, option in enumerate(options, 1):
-                        option_text = f"{chr(64+j)}. {option.option_text}"
-                        if option.is_correct:
-                            content.append(Paragraph(f"{option_text} ✓", correct_style))
-                        else:
-                            content.append(Paragraph(option_text, option_style))
-
-                # Add a space after each question
-                content.append(Spacer(1, 12))
-
-            # Add footer with generation info
-            generation_time = datetime.now(pytz.UTC).strftime("%Y-%m-%d %H:%M:%S GMT")
-            content.append(
-                Paragraph(f"Generated on: {generation_time}", styles["Normal"])
-            )
-            content.append(
-                Paragraph(f"Total Questions: {questions.count()}", styles["Normal"])
-            )
-
-            # Build PDF
-            doc.build(content)
-
-            # Return relative path for database storage
-            relative_path = f"exam_outputs/{output_filename}"
-
-            return relative_path
-
-        except Exception as e:
-            print(f"Error generating output PDF: {str(e)}")
-            return None
-
-    def extract_questions_with_options(self, exam_content):
-        """Extract questions and their options using Gemini"""
-        try:
-            # Limit content but take enough to capture multiple questions with options
             content_sample = exam_content[:10000]
+
+            language_instruction = ""
+            if language == "bangla":
+                language_instruction = "Extract the questions and options while preserving the original Bangla language."
+            elif language == "mixed":
+                language_instruction = "Extract the questions and options, preserving both Bangla and English text as they appear."
 
             prompt = f"""Extract all questions and all their multiple choice options from 
             this exam content.
+            
+            {language_instruction}
             
             Format your response as strict JSON with this structure:
             {{
@@ -506,6 +402,34 @@ class GenerateAnswerOptionsView(APIView):
             print(f"Error extracting questions with options: {str(e)}")
             return []
 
+    def generate_with_deepseek(self, prompt, max_retries=3):
+        """Generate content using DeepSeek API"""
+        headers = {
+            "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+            "Content-Type": "application/json",
+        }
+
+        payload = {
+            "model": "deepseek-chat",
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.7,
+            "max_tokens": 4000,
+        }
+
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(
+                    DEEPSEEK_API_URL, headers=headers, json=payload
+                )
+                response.raise_for_status()
+                data = response.json()
+                return data["choices"][0]["message"]["content"]
+            except Exception as e:
+                print(f"DeepSeek API attempt {attempt + 1} failed: {str(e)}")
+                if attempt == max_retries - 1:
+                    raise
+                time.sleep(1)  # Wait before retrying
+
     def post(self, request):
 
         exam_id = request.data.get("exam_id")
@@ -541,9 +465,14 @@ class GenerateAnswerOptionsView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Analyze the content to determine if it has options or answers
-            content_format = self.analyze_questions(exam_content)
+            # Analyze the content to determine if it has options or answers and detect language
+            content_format, language = self.analyze_questions(exam_content)
             print(f"Detected content format: {content_format}")
+            print(f"Detected language: {language}")
+
+            # Save language information to exam
+            exam.language = language
+            exam.save()
 
             # Initialize tracking variables
             questions_created = 0
@@ -559,12 +488,14 @@ class GenerateAnswerOptionsView(APIView):
                         "questions_with_options_answers",
                     ]:
                         questions_data = self.extract_questions_with_options(
-                            exam_content
+                            exam_content, language
                         )
 
                         if not questions_data:
                             # Fall back to regular extraction
-                            questions_data = self.extract_questions(exam_content)
+                            questions_data = self.extract_questions(
+                                exam_content, language
+                            )
 
                         if not questions_data:
                             raise ValueError(
@@ -592,7 +523,7 @@ class GenerateAnswerOptionsView(APIView):
                                     options_created += 1
                     else:
                         # For non-option formats, use regular extraction
-                        questions_data = self.extract_questions(exam_content)
+                        questions_data = self.extract_questions(exam_content, language)
 
                         if not questions_data:
                             raise ValueError(
@@ -611,10 +542,19 @@ class GenerateAnswerOptionsView(APIView):
                 # Handle each question based on content format
                 questions = exam.questions.all()
                 for question in questions:
-                    # Case 1: If format is questions_only, generate both options and answers --ok
+                    # For each question, detect its specific language (as individual questions might vary)
+                    question_language = (
+                        self.detect_language(question.question_text)
+                        if language == "mixed"
+                        else language
+                    )
+
+                    # Case 1: If format is questions_only, generate both options and answers
                     if content_format == "questions_only":
                         options_data = self.generate_options_and_answers(
-                            question.question_text, exam.mcq_options_count
+                            question.question_text,
+                            exam.mcq_options_count,
+                            question_language,
                         )
 
                         if options_data:
@@ -631,10 +571,12 @@ class GenerateAnswerOptionsView(APIView):
                             question.save()
 
                     # Case 2: If format is questions_with_answers, generate options that include
-                    # the answer --ok
+                    # the answer
                     elif content_format == "questions_with_answers":
                         options_data = self.generate_options_and_answers(
-                            question.question_text, exam.mcq_options_count
+                            question.question_text,
+                            exam.mcq_options_count,
+                            question_language,
                         )
 
                         if options_data:
@@ -651,15 +593,23 @@ class GenerateAnswerOptionsView(APIView):
                             question.save()
 
                     # Case 3: If format is questions_with_options, ensure options are extracted
-                    # and generate answers --ok
+                    # and generate answers
                     elif content_format == "questions_with_options":
                         options = list(question.options.all())
 
                         # If no options exist yet, try to extract them directly for this question
                         if not options:
+                            language_instruction = ""
+                            if question_language == "bangla":
+                                language_instruction = "Extract the options in Bangla language as they appear in the question."
+                            elif question_language == "mixed":
+                                language_instruction = "Extract the options preserving both Bangla and English text as they appear."
+
                             prompt = f"""Extract the multiple choice options for this question:
                             
                             Question: {question.question_text}
+                            
+                            {language_instruction}
                             
                             Format your response as strict JSON with this structure:
                             {{
@@ -728,7 +678,9 @@ class GenerateAnswerOptionsView(APIView):
                                 f"No options found or extracted for question '{question.question_text}', generating new ones"
                             )
                             options_data = self.generate_options_and_answers(
-                                question.question_text, exam.mcq_options_count
+                                question.question_text,
+                                exam.mcq_options_count,
+                                question_language,
                             )
 
                             if options_data:
@@ -777,6 +729,7 @@ class GenerateAnswerOptionsView(APIView):
                 {
                     "message": "Successfully processed exam content",
                     "content_format": content_format,
+                    "language": language,
                     "stats": {
                         "questions_processed": questions.count(),
                         "questions_created": questions_created,
@@ -798,40 +751,41 @@ class GenerateAnswerOptionsView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+
 class DeleteExamView(APIView):
     """View to delete an exam"""
-    
+
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, exam_id):
         try:
             # Get the exam and verify ownership
             exam = get_object_or_404(Exam, pk=exam_id, created_by=request.user)
-            
+
             # Delete associated files
             if exam.pdf_file:
                 if os.path.exists(exam.pdf_file.path):
                     os.remove(exam.pdf_file.path)
-            
+
             if exam.output_pdf:
                 if os.path.exists(exam.output_pdf.path):
                     os.remove(exam.output_pdf.path)
-            
+
             # Delete the exam (this will cascade delete related questions and options)
             exam.delete()
-            
+
             return Response(
                 {"message": "Exam deleted successfully"},
-                status=status.HTTP_204_NO_CONTENT
+                status=status.HTTP_204_NO_CONTENT,
             )
-            
+
         except Exam.DoesNotExist:
             return Response(
                 {"error": "Exam not found or you don't have permission to delete it"},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
         except Exception as e:
             return Response(
                 {"error": f"Error deleting exam: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

@@ -138,7 +138,7 @@ function ExamReview() {
         p: 3,
         minHeight: "100vh",
         background:
-          "linear-gradient(135deg, rgb(14, 26, 78) 0%, rgb(183, 132, 235) 100%)",
+          "radial-gradient(circle at 10% 20%, rgb(0, 93, 133) 0%, rgb(0, 181, 149) 90%)",
       }}
     >
       <Container maxWidth="lg">
@@ -325,13 +325,6 @@ function ExamReview() {
                     sx={{ mb: 2, fontWeight: "medium" }}
                   >
                     {question.text}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 1 }}
-                  >
-                    Marks: {question.marks}
                   </Typography>
 
                   <RadioGroup

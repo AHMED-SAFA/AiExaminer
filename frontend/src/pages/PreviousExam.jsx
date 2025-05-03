@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, forwardRef } from "react";
 import axios from "axios";
@@ -31,6 +32,7 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import Snackbar from "@mui/material/Snackbar";
 import { useAuth } from "../context/AuthContext";
+import PageTransition from "../components/PageTransition";
 
 const DeleteModalTransition = forwardRef(function Transition(props, ref) {
   return <Slide direction="down" ref={ref} {...props} />;
@@ -159,381 +161,382 @@ function PreviousExam() {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  if (loading) {
-    return (
+  return (
+    <PageTransition>
       <Box
         sx={{
-          display: "flex",
-          justifyContent: "center",
-          mt: 4,
-          background:
-            "linear-gradient(135deg, rgb(14, 26, 78) 0%, rgb(183, 132, 235) 100%)",
           minHeight: "100vh",
-          alignItems: "center",
+          background:
+            "radial-gradient(circle at 10% 20%, rgb(0, 93, 133) 0%, rgb(0, 181, 149) 90%)",
         }}
       >
-        <CircularProgress />
-      </Box>
-    );
-  }
+        {loading ? (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              minHeight: "100vh",
+              gap: 2,
+            }}
+          >
+            <CircularProgress size={60} thickness={4} sx={{ color: "white" }} />
+            <Typography variant="h6" sx={{ color: "white" }}>
+              Loading your exam history...
+            </Typography>
+          </Box>
+        ) : (
+          <Box sx={{ p: 3 }}>
+            <Typography
+              variant="h4"
+              sx={{ mb: 4, color: "white", fontWeight: "bold" }}
+            >
+              Your Exam History
+            </Typography>
 
-  if (error) {
-    return (
-      <Box sx={{ m: 2 }}>
-        <Alert severity="error">{error}</Alert>
-      </Box>
-    );
-  }
-
-  return (
-    <Box
-      sx={{
-        p: 3,
-        minHeight: "100vh",
-        background:
-          "linear-gradient(135deg, rgb(11, 36, 147) 0%, rgb(107, 190, 245) 100%)",
-      }}
-    >
-      <Typography
-        variant="h4"
-        sx={{ mb: 4, color: "white", fontWeight: "bold" }}
-      >
-        Your Exam History
-      </Typography>
-
-      {examSessions.length === 0 ? (
-        <Paper sx={{ p: 3, textAlign: "center" }}>
-          <Typography variant="h6">
-            No exam sessions found. Take an exam to see your history!
-          </Typography>
-        </Paper>
-      ) : (
-        <Grid container spacing={3}>
-          {examSessions.map((session) => (
-            <Grid item xs={12} md={6} lg={4} key={session.id}>
-              <Card
-                sx={{
-                  p: 3,
-                  height: "100%",
-                  transition: "transform 0.2s",
-                  "&:hover": {
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
-                  },
-                }}
-              >
-                <Typography
-                  sx={{
-                    mb: 2,
-                    justifyContent: "space-between",
-                    display: "flex",
-                  }}
-                  variant="h6"
-                  gutterBottom
-                >
-                  {session.exam_title}
-                  <IconButton
-                    aria-label="delete"
-                    onClick={() => handleDeleteClick(session)}
-                    size="small"
-                    sx={{
-                      color: "error.main",
-                      "&:hover": {
-                        backgroundColor: "error.lighter",
-                      },
-                    }}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
+            {examSessions.length === 0 ? (
+              <Paper sx={{ p: 3, textAlign: "center" }}>
+                <Typography variant="h6">
+                  No exam sessions found. Take an exam to see your history!
                 </Typography>
-                <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-                  <Chip
-                    icon={<TimelineIcon />}
-                    label={`Score: ${session.score}`}
-                    color={getScoreColor(session.score, session.total_marks)}
-                  />
-                  <Chip
-                    icon={<QuizIcon />}
-                    label={`Total Marks: ${session.total_marks}`}
-                    variant="outlined"
-                  />
-                </Box>
-                <Box
-                  sx={{
-                    display: "flex",
-                    gap: 1,
-                    mb: 2,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <Chip
-                    icon={<CheckCircleIcon />}
-                    label={`Correct: ${session.corrected_ans}`}
-                    color="success"
-                    variant="outlined"
-                    size="small"
-                    sx={{
-                      "& .MuiChip-label": {
-                        whiteSpace: "normal",
-                        display: "block",
-                      },
-                    }}
-                  />
-                  <Chip
-                    icon={<CancelIcon />}
-                    label={`Wrong: ${session.wrong_ans}`}
-                    color="error"
-                    variant="outlined"
-                    size="small"
-                    sx={{
-                      "& .MuiChip-label": {
-                        whiteSpace: "normal",
-                        display: "block",
-                      },
-                    }}
-                  />
-                  <Chip
-                    icon={<HelpOutlineIcon />}
-                    label={`Unanswered: ${session.unanswered}`}
-                    color="warning"
-                    variant="outlined"
-                    size="small"
-                    sx={{
-                      "& .MuiChip-label": {
-                        whiteSpace: "normal",
-                        display: "block",
-                      },
-                    }}
-                  />
-                </Box>
-                <Typography
-                  variant="body2"
-                  sx={{ mb: 2, color: "error.main" }}
-                  color="text.secondary"
-                >
-                  {getScoreColor(session.score, session.total_marks) === "error"
-                    ? "[You need to improve your score. Please review the exam.]"
-                    : ""}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Completed on: {session.completion_date}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Duration: {session.duration} minutes
-                </Typography>{" "}
-                <Typography variant="body2" color="text.secondary">
-                  Minus Marking:{" "}
-                  {session.minus_marking_value
-                    ? session.minus_marking_value
-                    : "0"}
-                </Typography>
-                <Box sx={{ mt: 2 }}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 1,
-                      mb: 2,
-                      p: 2,
-                      bgcolor: "rgba(0, 0, 0, 0.04)",
-                      borderRadius: 1,
-                    }}
-                  >
-                    <Typography variant="subtitle1" fontWeight="bold">
-                      Result Summary
-                    </Typography>
-                    <Box
+              </Paper>
+            ) : (
+              <Grid container spacing={3}>
+                {examSessions.map((session) => (
+                  <Grid item xs={12} md={6} lg={4} key={session.id}>
+                    <Card
                       sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 0.5,
+                        p: 3,
+                        height: "100%",
+                        transition: "transform 0.2s",
+                        "&:hover": {
+                          boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
+                        },
                       }}
                     >
-                      <Typography variant="body2">
-                        Correct Answers: {session.corrected_ans} ×{" "}
-                        {session.each_question_marks} ={" "}
-                        {session.corrected_ans * session.each_question_marks}
-                      </Typography>
-                      {session.minus_marking_value > 0 && (
-                        <Typography variant="body2">
-                          Minus Marking: {session.wrong_ans} ×{" "}
-                          {session.minus_marking_value} ={" "}
-                          {session.wrong_ans * session.minus_marking_value}
-                        </Typography>
-                      )}
-                      <Typography variant="body2" fontWeight="bold">
-                        Final Score: {session.score}
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  <Box sx={{ mt: 2, display: "flex", gap: 2 }}>
-                    <Button
-                      variant="contained"
-                      startIcon={<AssessmentIcon />}
-                      onClick={() => handleViewExamDetails(session.id)}
-                      size="small"
-                      color="primary"
-                      fullWidth
-                    >
-                      View Detailed Results
-                    </Button>
-
-                    {session.output_pdf && (
-                      <Button
-                        variant="outlined"
-                        component="a"
-                        href={`http://127.0.0.1:8000/media/${session.output_pdf}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        startIcon={<VisibilityIcon />}
-                        size="small"
+                      <Typography
                         sx={{
-                          color: "primary.main",
-                          borderColor: "primary.main",
-                          "&:hover": {
-                            backgroundColor: "rgba(0, 0, 0, 0.1)",
-                          },
+                          mb: 2,
+                          justifyContent: "space-between",
+                          display: "flex",
+                        }}
+                        variant="h6"
+                        gutterBottom
+                      >
+                        {session.exam_title}
+                        <IconButton
+                          aria-label="delete"
+                          onClick={() => handleDeleteClick(session)}
+                          size="small"
+                          sx={{
+                            color: "error.main",
+                            "&:hover": {
+                              backgroundColor: "error.lighter",
+                            },
+                          }}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Typography>
+                      <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+                        <Chip
+                          icon={<TimelineIcon />}
+                          label={`Score: ${session.score}`}
+                          color={getScoreColor(
+                            session.score,
+                            session.total_marks
+                          )}
+                        />
+                        <Chip
+                          icon={<QuizIcon />}
+                          label={`Total Marks: ${session.total_marks}`}
+                          variant="outlined"
+                        />
+                      </Box>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 1,
+                          mb: 2,
+                          flexWrap: "wrap",
                         }}
                       >
-                        View PDF
-                      </Button>
-                    )}
-                  </Box>
-                </Box>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      )}
+                        <Chip
+                          icon={<CheckCircleIcon />}
+                          label={`Correct: ${session.corrected_ans}`}
+                          color="success"
+                          variant="outlined"
+                          size="small"
+                          sx={{
+                            "& .MuiChip-label": {
+                              whiteSpace: "normal",
+                              display: "block",
+                            },
+                          }}
+                        />
+                        <Chip
+                          icon={<CancelIcon />}
+                          label={`Wrong: ${session.wrong_ans}`}
+                          color="error"
+                          variant="outlined"
+                          size="small"
+                          sx={{
+                            "& .MuiChip-label": {
+                              whiteSpace: "normal",
+                              display: "block",
+                            },
+                          }}
+                        />
+                        <Chip
+                          icon={<HelpOutlineIcon />}
+                          label={`Unanswered: ${session.unanswered}`}
+                          color="warning"
+                          variant="outlined"
+                          size="small"
+                          sx={{
+                            "& .MuiChip-label": {
+                              whiteSpace: "normal",
+                              display: "block",
+                            },
+                          }}
+                        />
+                      </Box>
+                      <Typography
+                        variant="body2"
+                        sx={{ mb: 2, color: "error.main" }}
+                        color="text.secondary"
+                      >
+                        {getScoreColor(session.score, session.total_marks) ===
+                        "error"
+                          ? "[You need to improve your score. Please review the exam.]"
+                          : ""}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Completed on: {session.completion_date}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Duration: {session.duration} minutes
+                      </Typography>{" "}
+                      <Typography variant="body2" color="text.secondary">
+                        Minus Marking:{" "}
+                        {session.minus_marking_value
+                          ? session.minus_marking_value
+                          : "0"}
+                      </Typography>
+                      <Box sx={{ mt: 2 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 1,
+                            mb: 2,
+                            p: 2,
+                            bgcolor: "rgba(0, 0, 0, 0.04)",
+                            borderRadius: 1,
+                          }}
+                        >
+                          <Typography variant="subtitle1" fontWeight="bold">
+                            Result Summary
+                          </Typography>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 0.5,
+                            }}
+                          >
+                            <Typography variant="body2">
+                              Correct Answers: {session.corrected_ans} ×{" "}
+                              {session.each_question_marks} ={" "}
+                              {session.corrected_ans *
+                                session.each_question_marks}
+                            </Typography>
+                            {session.minus_marking_value > 0 && (
+                              <Typography variant="body2">
+                                Minus Marking: {session.wrong_ans} ×{" "}
+                                {session.minus_marking_value} ={" "}
+                                {session.wrong_ans *
+                                  session.minus_marking_value}
+                              </Typography>
+                            )}
+                            <Typography variant="body2" fontWeight="bold">
+                              Final Score: {session.score}
+                            </Typography>
+                          </Box>
+                        </Box>
 
-      {/* Delete Confirmation Dialog */}
+                        <Box sx={{ mt: 2, display: "flex", gap: 2 }}>
+                          <Button
+                            variant="contained"
+                            startIcon={<AssessmentIcon />}
+                            onClick={() => handleViewExamDetails(session.id)}
+                            size="small"
+                            color="primary"
+                            fullWidth
+                          >
+                            View Detailed Results
+                          </Button>
 
-      <Dialog
-        open={openDialog}
-        onClose={handleCloseDialog}
-        aria-labelledby="delete-dialog-title"
-        aria-describedby="delete-dialog-description"
-        TransitionComponent={DeleteModalTransition}
-        keepMounted
-        PaperProps={{
-          sx: {
-            borderRadius: 2,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-            maxWidth: "400px",
-            width: "100%",
-            background: "linear-gradient(to bottom, #ffffff, #f8f9fa)",
-            overflow: "hidden",
-          },
-        }}
-      >
-        <Box
-          sx={{
-            width: "100%",
-            height: "8px",
-            bgcolor: "error.main",
-          }}
-        />
+                          {session.output_pdf && (
+                            <Button
+                              variant="outlined"
+                              component="a"
+                              href={`http://127.0.0.1:8000/media/${session.output_pdf}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              startIcon={<VisibilityIcon />}
+                              size="small"
+                              sx={{
+                                color: "primary.main",
+                                borderColor: "primary.main",
+                                "&:hover": {
+                                  backgroundColor: "rgba(0, 0, 0, 0.1)",
+                                },
+                              }}
+                            >
+                              View PDF
+                            </Button>
+                          )}
+                        </Box>
+                      </Box>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
 
-        <DialogTitle
-          id="delete-dialog-title"
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1.5,
-            pb: 1,
-            pt: 2.5,
-          }}
-        >
-          <Typography variant="h6" fontWeight="600">
-            Delete Exam Session
-          </Typography>
-        </DialogTitle>
-        <Divider sx={{ width: 1, bgcolor: "divider", mx: "auto" }} />
+            {/* Delete Confirmation Dialog */}
 
-        <DialogContent sx={{ pt: 1, pb: 2 }}>
-          <DialogContentText
-            id="delete-dialog-description"
-            sx={{
-              color: "text.secondary",
-              fontSize: "0.95rem",
-            }}
-          >
-            Are you sure you want to delete the exam session
-            <Box
-              component="span"
-              sx={{
-                fontWeight: "bold",
-                color: "text.primary",
-                display: "block",
-                my: 1,
-                p: 1.5,
-                bgcolor: "background.paper",
-                borderRadius: 1,
-                border: "1px dashed",
-                borderColor: "divider",
-                textAlign: "center",
+            <Dialog
+              open={openDialog}
+              onClose={handleCloseDialog}
+              aria-labelledby="delete-dialog-title"
+              aria-describedby="delete-dialog-description"
+              TransitionComponent={DeleteModalTransition}
+              keepMounted
+              PaperProps={{
+                sx: {
+                  borderRadius: 2,
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+                  maxWidth: "400px",
+                  width: "100%",
+                  background: "linear-gradient(to bottom, #ffffff, #f8f9fa)",
+                  overflow: "hidden",
+                },
               }}
             >
-              "{selectedSession?.exam_title}"
-            </Box>
-            This action is permanent and cannot be undone. All related data
-            including scores and answers will be permanently removed.
-          </DialogContentText>
-        </DialogContent>
+              <Box
+                sx={{
+                  width: "100%",
+                  height: "8px",
+                  bgcolor: "error.main",
+                }}
+              />
 
-        <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
-          <Button
-            onClick={handleCloseDialog}
-            variant="outlined"
-            startIcon={<CancelIcon />}
-            sx={{
-              borderRadius: 2,
-              px: 2.5,
-              fontWeight: 500,
-              textTransform: "none",
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleConfirmDelete}
-            color="error"
-            variant="contained"
-            startIcon={<DeleteIcon />}
-            disableElevation
-            sx={{
-              borderRadius: 2,
-              px: 2.5,
-              ml: 1.5,
-              fontWeight: 500,
-              textTransform: "none",
-              "&:hover": {
-                bgcolor: "error.dark",
-                boxShadow: "0 4px 12px rgba(211, 47, 47, 0.3)",
-              },
-            }}
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+              <DialogTitle
+                id="delete-dialog-title"
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  pb: 1,
+                  pt: 2.5,
+                }}
+              >
+                <Typography variant="h6" fontWeight="600">
+                  Delete Exam Session
+                </Typography>
+              </DialogTitle>
+              <Divider sx={{ width: 1, bgcolor: "divider", mx: "auto" }} />
 
-      {/* Snackbar for notifications */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={snackbar.severity}
-          sx={{ width: "100%" }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+              <DialogContent sx={{ pt: 1, pb: 2 }}>
+                <DialogContentText
+                  id="delete-dialog-description"
+                  sx={{
+                    color: "text.secondary",
+                    fontSize: "0.95rem",
+                  }}
+                >
+                  Are you sure you want to delete the exam session
+                  <Box
+                    component="span"
+                    sx={{
+                      fontWeight: "bold",
+                      color: "text.primary",
+                      display: "block",
+                      my: 1,
+                      p: 1.5,
+                      bgcolor: "background.paper",
+                      borderRadius: 1,
+                      border: "1px dashed",
+                      borderColor: "divider",
+                      textAlign: "center",
+                    }}
+                  >
+                    "{selectedSession?.exam_title}"
+                  </Box>
+                  This action is permanent and cannot be undone. All related
+                  data including scores and answers will be permanently removed.
+                </DialogContentText>
+              </DialogContent>
+
+              <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
+                <Button
+                  onClick={handleCloseDialog}
+                  variant="outlined"
+                  startIcon={<CancelIcon />}
+                  sx={{
+                    borderRadius: 2,
+                    px: 2.5,
+                    fontWeight: 500,
+                    textTransform: "none",
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConfirmDelete}
+                  color="error"
+                  variant="contained"
+                  startIcon={<DeleteIcon />}
+                  disableElevation
+                  sx={{
+                    borderRadius: 2,
+                    px: 2.5,
+                    ml: 1.5,
+                    fontWeight: 500,
+                    textTransform: "none",
+                    "&:hover": {
+                      bgcolor: "error.dark",
+                      boxShadow: "0 4px 12px rgba(211, 47, 47, 0.3)",
+                    },
+                  }}
+                >
+                  Delete
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+            {/* Snackbar for notifications */}
+            <Snackbar
+              open={snackbar.open}
+              autoHideDuration={6000}
+              onClose={handleCloseSnackbar}
+              anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+            >
+              <Alert
+                onClose={handleCloseSnackbar}
+                severity={snackbar.severity}
+                sx={{ width: "100%" }}
+              >
+                {snackbar.message}
+              </Alert>
+            </Snackbar>
+          </Box>
+        )}
+      </Box>
+    </PageTransition>
   );
 }
 

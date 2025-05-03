@@ -345,7 +345,7 @@ const Home = () => {
       sx={{
         minHeight: "100vh",
         background:
-          "linear-gradient(135deg, rgb(11, 36, 147) 0%, rgb(107, 190, 245) 100%)",
+          "radial-gradient(circle at 10% 20%, rgb(0, 93, 133) 0%, rgb(0, 181, 149) 90%)",
         display: "flex",
         flexDirection: "column",
         padding: 4,
@@ -370,6 +370,7 @@ const Home = () => {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
+          color="gray"
           onClick={handleModalOpen}
           sx={{
             backgroundColor: "rgba(255, 255, 255, 0.2)",

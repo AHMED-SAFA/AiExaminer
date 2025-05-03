@@ -8,8 +8,8 @@ __all__ = ("celery_app",)
 
 # Load environment variables from .env file
 load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 

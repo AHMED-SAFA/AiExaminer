@@ -474,7 +474,7 @@ function Profile() {
       sx={{
         minHeight: "100vh",
         background:
-          "linear-gradient(135deg, rgb(56, 49, 78)  0%, rgb(23, 150, 150) 100%)",
+          "radial-gradient(circle at 10% 20%, rgb(0, 93, 133) 0%, rgb(0, 181, 149) 90%)",
         py: 4,
       }}
       component={motion.div}
@@ -504,7 +504,8 @@ function Profile() {
             <Box
               sx={{
                 height: 180,
-                background: "linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%)",
+                background:
+                  "black linear-gradient(180deg, rgba(80, 148, 173, 0.77) 0%, rgba(0, 181, 149, 0.8) 100%)",
                 position: "relative",
                 display: "flex",
                 alignItems: "flex-end",

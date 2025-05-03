@@ -134,7 +134,6 @@ export const AuthProvider = ({ children }) => {
           }
         );
       } catch (error) {
-        // If the error is due to expired access token, try without it
         if (error.response?.data?.code === "token_not_valid") {
           await axios.post(
             "http://localhost:8000/api/auth/logout/",
@@ -150,7 +149,6 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
-      // Sign out from Firebase if needed
       try {
         await auth.signOut();
       } catch (fbError) {
@@ -256,65 +254,62 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        if (token) {
-          const decoded = jwtDecode(token);
+    checkAuth();
+  }, [token]);
+  const checkAuth = async () => {
+    try {
+      if (token) {
+        const decoded = jwtDecode(token);
+        
+        const currentTime = Date.now() / 1000;
+        if (decoded.exp < currentTime) {
+          try {
+            const refreshToken = localStorage.getItem("refreshToken");
+            const response = await axios.post(
+              "http://127.0.0.1:8000/api/token/refresh/",
+              {
+                refresh: refreshToken,
+              }
+            );
 
-          // Check if token is expired
-          const currentTime = Date.now() / 1000;
-          if (decoded.exp < currentTime) {
+            const newAccessToken = response.data.access;
+            localStorage.setItem("token", newAccessToken);
+            setToken(newAccessToken);
+
+            // If there's user data in the response, use that instead of just the decoded token
+            if (response.data.user) {
+              setUser(response.data.user);
+            } else {
+              const newDecoded = jwtDecode(newAccessToken);
+              setUser(newDecoded);
+            }
+          } catch (refreshError) {
+            logout();
+          }
+        } else {
+          if (!user) {
             try {
-              const refreshToken = localStorage.getItem("refreshToken");
-              const response = await axios.post(
-                "http://127.0.0.1:8000/api/token/refresh/",
+              const response = await axios.get(
+                "http://127.0.0.1:8000/api/auth/profile/",
                 {
-                  refresh: refreshToken,
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                  },
                 }
               );
-
-              const newAccessToken = response.data.access;
-              localStorage.setItem("token", newAccessToken);
-              setToken(newAccessToken);
-
-              // If there's user data in the response, use that instead of just the decoded token
-              if (response.data.user) {
-                setUser(response.data.user);
-              } else {
-                const newDecoded = jwtDecode(newAccessToken);
-                setUser(newDecoded);
-              }
-            } catch (refreshError) {
-              logout();
-            }
-          } else {
-            if (!user) {
-              try {
-                const response = await axios.get(
-                  "http://127.0.0.1:8000/api/auth/profile/",
-                  {
-                    headers: {
-                      Authorization: `Bearer ${token}`,
-                    },
-                  }
-                );
-                setUser(response.data);
-              } catch (profileError) {
-                setUser(decoded);
-              }
+              setUser(response.data);
+            } catch (profileError) {
+              setUser(decoded);
             }
           }
         }
-      } catch (error) {
-        logout();
-      } finally {
-        setIsLoading(false);
       }
-    };
-
-    checkAuth();
-  }, [token]);
-
+    } catch (error) {
+      logout();
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <AuthContext.Provider
       value={{
