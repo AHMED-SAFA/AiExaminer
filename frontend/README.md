@@ -1,12 +1,50 @@
-# React + Vite
+# AI Examiner
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![home1](https://github.com/user-attachments/assets/7a3776e6-bf69-4489-aa89-a06c8066d554)
 
-Currently, two official plugins are available:
+> An innovative platform leveraging artificial intelligence to automate exam creation and analysis.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 📑 Table of Contents
+- [Project Overview](#project-overview)
+- [Key Features](#key-features)
+- [Technology Stack](#technology-stack)
+- [Installation](#installation)
+  - [Prerequisites](#prerequisites)
+  - [Frontend Setup](#frontend-setup)
+- [Configuration](#configuration)
+- [API Endpoints](#api-endpoints)
+- [Contributing](#contributing)
+- [License](#license)
 
-## Expanding the ESLint configuration
+## 🔍 Project Overview
+AI Examiner is an innovative platform that leverages artificial intelligence to automate the exam creation process. Educators can upload course materials (PDFs or text files), and the system automatically generates questions, multiple-choice options, and correct answers using DeepSeek AI. The platform also provides comprehensive analytics on exam performance and student learning patterns.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## ✨ Key Features
+
+### 👨‍💻 User-Friendly Interface
+
+### 🔒 Secure & Reliable
+- JWT authentication
+- Password reset and change functionality
+- Data encryption
+
+## 🛠️ Technology Stack
+
+### Frontend
+- React.js
+- Redux for state management
+- Tailwind CSS
+- Chart.js for data visualization
+- Material-UI for UI components
+- Axios for API calls
+
+## ⚙️ Installation
+
+### Prerequisites
+- React.js 16+
+- Material Ui
+- Tailwind CSS
+- Recharts
+- Lucid React
+- Framer Motion
+
