@@ -70,6 +70,28 @@ function ExamReview() {
     }
   };
 
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          background:
+            "radial-gradient(circle at 10% 20%, rgb(0, 93, 133) 0%, rgb(0, 181, 149) 90%)",
+        }}
+        className="flex justify-center items-center h-screen"
+      >
+        <Card className="p-8 max-w-md flex flex-col items-center">
+          <CircularProgress size={100} thickness={4} className="mb-4" />
+          <Typography variant="h6" color="textSecondary">
+            Loading Exam Review...
+          </Typography>
+          <Typography variant="body2" color="textSecondary" className="mt-2">
+            Please wait while we fetch your exam review data
+          </Typography>
+        </Card>
+      </Box>
+    );
+  }
+
   const getStatusIcon = (status, isCorrect) => {
     if (status === "unanswered") {
       return <HelpOutlineIcon color="warning" />;

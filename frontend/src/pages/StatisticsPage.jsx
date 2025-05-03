@@ -376,7 +376,7 @@ function StatisticsPage() {
 
   if (loading) {
     return (
-      <Box className="flex justify-center items-center h-screen">
+      <Box className="bg-pink-50 flex justify-center items-center h-screen">
         <Card className="p-8 max-w-md flex flex-col items-center">
           <CircularProgress size={60} thickness={4} className="mb-4" />
           <Typography variant="h6" color="textSecondary">

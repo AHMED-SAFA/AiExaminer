@@ -16,6 +16,8 @@ from .serializers import (
 from rest_framework.views import APIView
 import google.generativeai as genai
 from django.conf import settings
+from datetime import datetime
+import pytz
 import PyPDF2
 import os
 import json
@@ -338,6 +340,107 @@ class GenerateAnswerOptionsView(APIView):
         except Exception as e:
             print(f"Error generating options: {str(e)}")
             return []
+
+    def generate_output_pdf(self, exam, questions):
+        """Generate a formatted PDF with questions and answers based on content format"""
+        try:
+            # Create output directory if it doesn't exist
+            output_dir = os.path.join(settings.MEDIA_ROOT, "exam_outputs")
+            os.makedirs(output_dir, exist_ok=True)
+
+            # Generate output filename
+            output_filename = f"exam_{exam.id}_processed_{int(time.time())}.pdf"
+            output_path = os.path.join(output_dir, output_filename)
+
+            # Create PDF document
+            doc = SimpleDocTemplate(output_path, pagesize=letter)
+            styles = getSampleStyleSheet()
+
+            # Define custom styles
+            title_style = ParagraphStyle(
+                "Title",
+                parent=styles["Heading1"],
+                fontSize=16,
+                alignment=1,
+            )
+
+            question_style = ParagraphStyle(
+                "Question",
+                parent=styles["Normal"],
+                fontSize=12,
+                fontName="Helvetica-Bold",
+            )
+
+            option_style = ParagraphStyle(
+                "Option", parent=styles["Normal"], fontSize=11, leftIndent=20
+            )
+
+            correct_style = ParagraphStyle(
+                "CorrectOption", parent=option_style, textColor=colors.green
+            )
+
+            answer_style = ParagraphStyle(
+                "Answer",
+                parent=styles["Normal"],
+                fontSize=11,
+                textColor=colors.blue,
+                leftIndent=20,
+                fontName="Helvetica-Bold",
+            )
+
+            # Build content
+            content = []
+
+            # Add title
+            content.append(Paragraph(f"Exam: {exam.title}", title_style))
+            content.append(Spacer(1, 12))
+
+            # Add exam format info
+            format_text = f"Format: {'Multiple Choice Exam' if exam.questions.first().has_options else 'Question and Answer Exam'}"
+            content.append(Paragraph(format_text, styles["Normal"]))
+            content.append(Spacer(1, 12))
+
+            # Add questions and options
+            for i, question in enumerate(questions, 1):
+                # Question text
+                content.append(
+                    Paragraph(f"Q{i}. {question.question_text}", question_style)
+                )
+                content.append(Spacer(1, 6))
+
+                # Handle options if they exist
+                options = question.options.all()
+                if options.exists():
+                    for j, option in enumerate(options, 1):
+                        option_text = f"{chr(64+j)}. {option.option_text}"
+                        if option.is_correct:
+                            content.append(Paragraph(f"{option_text} ✓", correct_style))
+                        else:
+                            content.append(Paragraph(option_text, option_style))
+
+                # Add a space after each question
+                content.append(Spacer(1, 12))
+
+            # Add footer with generation info
+            generation_time = datetime.now(pytz.UTC).strftime("%Y-%m-%d %H:%M:%S GMT")
+            content.append(
+                Paragraph(f"Generated on: {generation_time}", styles["Normal"])
+            )
+            content.append(
+                Paragraph(f"Total Questions: {questions.count()}", styles["Normal"])
+            )
+
+            # Build PDF
+            doc.build(content)
+
+            # Return relative path for database storage
+            relative_path = f"exam_outputs/{output_filename}"
+
+            return relative_path
+
+        except Exception as e:
+            print(f"Error generating output PDF: {str(e)}")
+            return None
 
     def extract_questions_with_options(self, exam_content, language):
         """Extract questions and their options using Gemini with language support"""
