@@ -12,9 +12,15 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [userData, setUserData] = useState(null);
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    checkAuth();
+    fetchUserData();
+  }, [token]);
 
   const login = async (email, password) => {
     try {
@@ -61,6 +67,7 @@ export const AuthProvider = ({ children }) => {
       };
     }
   };
+
   const loginWithGoogle = async () => {
     try {
       // Configure popup settings to handle COOP issues
@@ -114,6 +121,20 @@ export const AuthProvider = ({ children }) => {
           error.message ||
           "Google login failed. Please try again.",
       };
+    }
+  };
+
+  const fetchUserData = async () => {
+    try {
+      const response = await axios.get("http://127.0.0.1:8000/api/auth/user/", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log("Fetched userData from home:", response.data);
+      setUserData(response.data);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
     }
   };
 
@@ -253,14 +274,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  useEffect(() => {
-    checkAuth();
-  }, [token]);
   const checkAuth = async () => {
     try {
       if (token) {
         const decoded = jwtDecode(token);
-        
+
         const currentTime = Date.now() / 1000;
         if (decoded.exp < currentTime) {
           try {
@@ -310,12 +328,16 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(false);
     }
   };
+
   return (
     <AuthContext.Provider
       value={{
         user,
         token,
         isLoading,
+        userData,
+        setUserData,
+        fetchUserData,
         login,
         logout,
         register,

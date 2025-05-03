@@ -51,9 +51,8 @@ const DeleteModalTransition = forwardRef(function Transition(props, ref) {
 });
 
 const Home = () => {
-  const { token } = useAuth();
-  const [userData, setUserData] = useState(null);
   const navigate = useNavigate();
+  const { token, user, userData } = useAuth();
   const [exams, setExams] = useState([]);
   const [examLoading, setExamLoading] = useState(true);
   const [generatingOptions, setGeneratingOptions] = useState({});
@@ -74,6 +73,12 @@ const Home = () => {
     examId: null,
   });
 
+  useEffect(() => {
+    console.log("user from auth context:", user);
+    console.log("userData is from auth context:", userData);
+    fetchExams();
+  }, []);
+
   const handleDeleteDialogOpen = (event, examId) => {
     event.stopPropagation();
     setDeleteDialog({
@@ -87,25 +92,6 @@ const Home = () => {
       open: false,
       examId: null,
     });
-  };
-
-  useEffect(() => {
-    fetchExams();
-    fetchUserData();
-  }, []);
-
-  const fetchUserData = async () => {
-    try {
-      const response = await axios.get("http://127.0.0.1:8000/api/auth/user/", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      console.log("Fetched userData from home:", response.data);
-      setUserData(response.data);
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    }
   };
 
   const handleModalOpen = () => {
@@ -409,102 +395,170 @@ const Home = () => {
         </Box>
 
         {examLoading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              p: 4,
+              minHeight: "200px",
+            }}
+          >
             <CircularProgress />
           </Box>
         ) : exams.length > 0 ? (
-          <Grid container spacing={3}>
+          <Grid
+            container
+            spacing={{ xs: 2, sm: 2, md: 3 }}
+            sx={{
+              px: { xs: 1, sm: 2, md: 3 },
+              py: 2,
+              justifyContent: { xs: "center", sm: "flex-start" },
+            }}
+          >
             {exams.map((exam) => (
-              <Grid item xs={12} sm={6} md={4} key={exam.id}>
+              <Grid item xs={12} sm={6} md={4} lg={3} key={exam.id}>
                 <Card
+                  elevation={2}
                   sx={{
                     height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
                     cursor: "pointer",
-                    transition: "transform 0.2s",
+                    transition: "all 0.3s ease",
+                    borderRadius: 2,
+                    overflow: "hidden",
                     "&:hover": {
-                      boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.15)",
+                      transform: "translateY(-5px)",
+                      boxShadow: "0px 8px 25px rgba(0, 0, 0, 0.15)",
                     },
                   }}
                   onClick={() => handleExamClick(exam.id, exam.output_pdf)}
                 >
-                  <CardContent>
-                    <Typography
-                      variant="h6"
-                      color="primary.dark"
-                      fontWeight="bold"
+                  <CardContent sx={{ flexGrow: 1, p: { xs: 2, sm: 3 } }}>
+                    <Box
                       sx={{
-                        mb: 2,
                         display: "flex",
                         justifyContent: "space-between",
-                        alignItems: "center",
+                        alignItems: "flex-start",
+                        mb: 2,
                       }}
                     >
-                      {exam.title}
+                      <Typography
+                        variant="h6"
+                        color="primary.dark"
+                        fontWeight="bold"
+                        sx={{
+                          wordBreak: "break-word",
+                          flexGrow: 1,
+                          pr: 1,
+                        }}
+                      >
+                        {exam.title}
+                      </Typography>
                       <IconButton
                         aria-label="delete"
                         size="small"
-                        onClick={(e) => handleDeleteDialogOpen(e, exam.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteDialogOpen(e, exam.id);
+                        }}
                         sx={{
                           color: "error.main",
                           "&:hover": {
                             backgroundColor: "error.lighter",
                           },
+                          mt: -0.5,
+                          ml: 0.5,
+                          flexShrink: 0,
                         }}
                       >
                         <DeleteIcon />
                       </IconButton>
-                    </Typography>
-                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                      <AccessTimeIcon fontSize="small" sx={{ mr: 1 }} />
-                      <Typography variant="body2">
-                        {exam.duration} minutes
-                      </Typography>
                     </Box>
 
-                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                      <GradeIcon fontSize="small" sx={{ mr: 1 }} />
-                      <Typography variant="body2">
-                        Total: {exam.total_marks} marks (
-                        {exam.each_question_marks} marks per question)
-                      </Typography>
-                    </Box>
-
-                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                      <AssignmentIcon fontSize="small" sx={{ mr: 1 }} />
-                      <Typography variant="body2">
-                        {exam.question_count ||
-                          "Questions count will be updated after generating questions"}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                      <RemoveCircleOutlineIcon
-                        fontSize="small"
-                        sx={{ mr: 1 }}
-                      />
-                      <Typography variant="body2">
-                        Minus Marking: {exam.minus_marking ? "Yes" : "No"}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                      <IsoIcon fontSize="small" sx={{ mr: 1 }} />
-                      <Typography variant="body2">
-                        {exam.minus_marking_value
-                          ? "-" + exam.minus_marking_value + " each wrong"
-                          : "No minus marking"}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ mt: 2 }}>
+                    <Box sx={{ mb: 2 }}>
                       <Chip
                         label={exam.processing_status.toUpperCase()}
                         color={getStatusColor(exam.processing_status)}
                         size="small"
+                        sx={{ mb: 1.5 }}
                       />
                     </Box>
-                    <Box sx={{ mt: 2 }}>
+
+                    <Box
+                      sx={{ display: "flex", flexDirection: "column", gap: 1 }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <AccessTimeIcon
+                          fontSize="small"
+                          sx={{ mr: 1, color: "text.secondary" }}
+                        />
+                        <Typography variant="body2">
+                          {exam.duration} minutes
+                        </Typography>
+                      </Box>
+
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <GradeIcon
+                          fontSize="small"
+                          sx={{ mr: 1, color: "text.secondary" }}
+                        />
+                        <Typography
+                          variant="body2"
+                          sx={{ wordBreak: "break-word" }}
+                        >
+                          {exam.total_marks} marks ({exam.each_question_marks}{" "}
+                          per question)
+                        </Typography>
+                      </Box>
+
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <AssignmentIcon
+                          fontSize="small"
+                          sx={{ mr: 1, color: "text.secondary" }}
+                        />
+                        <Typography variant="body2">
+                          {exam.question_count + " Questions" ||
+                            "Questions count pending"}
+                        </Typography>
+                      </Box>
+
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <RemoveCircleOutlineIcon
+                          fontSize="small"
+                          sx={{ mr: 1, color: "text.secondary" }}
+                        />
+                        <Typography variant="body2">
+                          Minus Marking: {exam.minus_marking ? "Yes" : "No"}
+                        </Typography>
+                      </Box>
+
+                      {exam.minus_marking && (
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <IsoIcon
+                            fontSize="small"
+                            sx={{ mr: 1, color: "text.secondary" }}
+                          />
+                          <Typography variant="body2">
+                            -{exam.minus_marking_value} for each wrong
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+
+                    <Box sx={{ mt: 3 }}>
                       <Button
                         variant="outlined"
+                        fullWidth
                         size="small"
-                        startIcon={<AutoFixHighIcon />}
+                        startIcon={
+                          generatingOptions[exam.id] ? (
+                            <CircularProgress size={16} />
+                          ) : (
+                            <AutoFixHighIcon />
+                          )
+                        }
                         onClick={(e) => {
                           e.stopPropagation();
                           handleGenerateOptions(exam.id);
@@ -516,34 +570,49 @@ const Home = () => {
                             exam.processing_status === "Generated")
                         }
                         sx={{
+                          borderRadius: 1.5,
+                          textTransform: "none",
                           color: "primary.main",
                           borderColor: "primary.main",
                           "&:hover": {
-                            backgroundColor: "rgba(0, 0, 0, 0.1)",
+                            backgroundColor: "primary.lighter",
                           },
                         }}
                       >
-                        {generatingOptions[exam.id] ? (
-                          <>
-                            <CircularProgress size={16} sx={{ mr: 1 }} />
-                            Generating...
-                          </>
-                        ) : (
-                          "Generate Answer/Option"
-                        )}
+                        {generatingOptions[exam.id]
+                          ? "Generating..."
+                          : "Generate Answers/Options"}
                       </Button>
-                      <Typography
-                        variant="body2"
-                        sx={{ mt: 2, borderRadius: 2 }}
-                      >
+
+                      <Box sx={{ mt: 2 }}>
                         {exam.processing_status === "Generated" ? (
-                          <Alert severity="success">
+                          <Alert
+                            severity="success"
+                            icon={<CheckCircleIcon fontSize="small" />}
+                            sx={{
+                              borderRadius: 1.5,
+                              "& .MuiAlert-message": {
+                                fontSize: "0.75rem",
+                              },
+                            }}
+                          >
                             Exam is ready! Click to start.
                           </Alert>
                         ) : (
-                          <Alert severity="error"> Generate exam first.</Alert>
+                          <Alert
+                            severity="info"
+                            icon={<InfoIcon fontSize="small" />}
+                            sx={{
+                              borderRadius: 1.5,
+                              "& .MuiAlert-message": {
+                                fontSize: "0.75rem",
+                              },
+                            }}
+                          >
+                            Generate exam first
+                          </Alert>
                         )}
-                      </Typography>
+                      </Box>
                     </Box>
                   </CardContent>
                 </Card>
@@ -551,8 +620,33 @@ const Home = () => {
             ))}
           </Grid>
         ) : (
-          <Box sx={{ textAlign: "center", py: 4 }}>
-            <Typography variant="body1" color="textSecondary">
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              p: { xs: 3, sm: 4 },
+              minHeight: "300px",
+              textAlign: "center",
+            }}
+          >
+            <AssignmentIcon
+              sx={{
+                fontSize: 60,
+                color: "text.secondary",
+                mb: 2,
+                opacity: 0.7,
+              }}
+            />
+            <Typography variant="h6" color="textSecondary" gutterBottom>
+              No Exams Found
+            </Typography>
+            <Typography
+              variant="body2"
+              color="textSecondary"
+              sx={{ maxWidth: "400px", mx: "auto" }}
+            >
               You haven't created any exams yet. Click the "Create New Exam"
               button to get started.
             </Typography>

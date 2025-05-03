@@ -1,68 +1,29 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
-import {
-  styled,
-  useTheme,
-  Box,
-  Menu,
-  MenuItem,
-  Avatar,
-  AppBar,
-  Toolbar,
-  IconButton,
-  Typography,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemText,
-  ListItemIcon,
-  Divider,
-  Badge,
-} from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
-import AccountCircle from "@mui/icons-material/AccountCircle";
-import MailIcon from "@mui/icons-material/Mail";
-import NotificationsIcon from "@mui/icons-material/Notifications";
-import LogoutIcon from "@mui/icons-material/Logout";
-import MoreIcon from "@mui/icons-material/MoreVert";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 
-const drawerWidth = 240;
-
-const DrawerHeader = styled("div")(({ theme }) => ({
-  display: "flex",
-  alignItems: "center",
-  padding: theme.spacing(0, 1),
-  ...theme.mixins.toolbar,
-  justifyContent: "flex-end",
-}));
+import {
+  Bars3Icon,
+  XMarkIcon,
+  UserCircleIcon,
+  ChevronDownIcon,
+  AcademicCapIcon,
+  ChartBarIcon,
+  ArrowRightOnRectangleIcon,
+} from "@heroicons/react/24/outline";
 
 export default function Navbar() {
   const { token, logout } = useAuth();
   const navigate = useNavigate();
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = useState(null);
   const [userData, setUserData] = useState(null);
-  const [open, setOpen] = useState(false);
-  const theme = useTheme();
-  const menuId = "primary-search-account-menu";
-  const mobileMenuId = "primary-search-account-menu-mobile";
-  const isMenuOpen = Boolean(anchorEl);
-  const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   useEffect(() => {
     fetchUserData();
-  }, []);
-
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
+  }, [token]);
 
   const fetchUserData = async () => {
     try {
@@ -73,345 +34,175 @@ export default function Navbar() {
       });
       setUserData(response.data);
     } catch (error) {
-      console.error("Error fetching user data from navbar:", error);
+      console.error("Error fetching user data:", error);
     }
   };
 
-  const handleProfileMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
   };
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setMobileMoreAnchorEl(null);
+  const toggleMobileMenu = () => {
+    setIsOpen(!isOpen);
   };
 
-  const handleDrawerOpen = () => {
-    setOpen(true);
+  const toggleProfileMenu = () => {
+    setIsProfileMenuOpen(!isProfileMenuOpen);
   };
-
-  const handleDrawerClose = () => {
-    setOpen(false);
-  };
-
-  const renderAccountMenu = (
-    <Menu
-      anchorEl={anchorEl}
-      anchorOrigin={{
-        vertical: "top",
-        horizontal: "right",
-      }}
-      id={menuId}
-      keepMounted
-      transformOrigin={{
-        vertical: "top",
-        horizontal: "right",
-      }}
-      open={isMenuOpen}
-      onClose={handleMenuClose}
-    >
-      <MenuItem onClick={handleMenuClose} component={Link} to="/profile">
-        <IconButton
-          size="large"
-          aria-label="account of current user"
-          aria-controls="primary-search-account-menu"
-          aria-haspopup="true"
-          color="inherit"
-        >
-          {userData?.image ? (
-            <Avatar
-              src={userData.image}
-              alt="Profile"
-              sx={{ width: 24, height: 24 }}
-            />
-          ) : (
-            <AccountCircle />
-          )}
-        </IconButton>
-        <p>Profile</p>
-      </MenuItem>
-      <MenuItem onClick={handleLogout}>
-        <IconButton
-          size="large"
-          aria-label="account of current user"
-          aria-controls="primary-search-account-menu"
-          aria-haspopup="true"
-          color="inherit"
-        >
-          <LogoutIcon />
-        </IconButton>
-        Logout
-      </MenuItem>
-    </Menu>
-  );
-
-  const mobileMenu = (
-    <Menu
-      anchorEl={mobileMoreAnchorEl}
-      anchorOrigin={{
-        vertical: "top",
-        horizontal: "right",
-      }}
-      id={mobileMenuId}
-      keepMounted
-      transformOrigin={{
-        vertical: "top",
-        horizontal: "right",
-      }}
-      open={isMobileMenuOpen}
-      onClose={handleMenuClose}
-    >
-      <MenuItem onClick={handleProfileMenuOpen}>
-        <IconButton
-          size="large"
-          aria-label="account of current user"
-          aria-controls="primary-search-account-menu"
-          aria-haspopup="true"
-          color="inherit"
-        >
-          {userData?.image ? (
-            <Avatar
-              src={userData.image}
-              alt="Profile"
-              sx={{ width: 24, height: 24 }}
-            />
-          ) : (
-            <AccountCircle />
-          )}
-        </IconButton>
-        <p>Profile</p>
-      </MenuItem>
-      <MenuItem onClick={handleLogout}>
-        <IconButton size="large" aria-label="logout" color="inherit">
-          <LogoutIcon />
-        </IconButton>
-        <p>Logout</p>
-      </MenuItem>
-    </Menu>
-  );
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static" sx={{ backgroundColor: "black", py: 1.5 }}>
-        <Toolbar>
-          <IconButton
-            size="large"
-            color="inherit"
-            edge="start"
-            aria-label="open drawer"
-            onClick={handleDrawerOpen}
-            sx={{
-              p: 3,
-              my: 1,
-              display: { xs: "flex", md: "none" },
-            }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography
-            variant="h6"
-            noWrap
-            component="div"
-            sx={{ display: { xs: "none", sm: "block" } }}
-          >
-            <Link to="/" style={{ textDecoration: "none", color: "white" }}>
-              <Typography
-                variant="h6"
-                component="span"
-                sx={{ fontWeight: 600 }}
-              >
+    <nav className="bg-black text-white shadow-lg">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          {/* Logo and Desktop Navigation */}
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <Link to="/" className="text-white font-bold text-xl">
                 AiExaminer
-              </Typography>
-            </Link>
-          </Typography>
-
-          <Box sx={{ flexGrow: 1 }} />
-
-          {/* Desktop Navigation */}
-          <Box
-            sx={{
-              display: { xs: "none", md: "flex" },
-              alignItems: "center",
-              gap: 3,
-            }}
-          >
-            <Typography
-              variant="body2"
-              component="span"
-              sx={{
-                fontWeight: 500,
-                backgroundColor: "indigo",
-                cursor: "pointer",
-                px: 2,
-                py: 1,
-                borderRadius: 1,
-                color: "white",
-                "&:hover": {
-                  backgroundColor: "darkblue",
-                },
-                transition: "background-color 0.3s ease",
-              }}
-            >
-              <Link to={`/previous-exams`} style={{ textDecoration: "none" }}>
-                <Typography
-                  variant="body2"
-                  component="span"
-                  sx={{ fontWeight: 600, color: "white" }}
-                >
-                  Previous Exams
-                </Typography>
               </Link>
-            </Typography>
-            <Typography
-              variant="body2"
-              component="span"
-              sx={{
-                fontWeight: 500,
-                backgroundColor: "indigo",
-                cursor: "pointer",
-                px: 2,
-                py: 1,
-                borderRadius: 1,
-                color: "white",
-                "&:hover": {
-                  backgroundColor: "darkblue",
-                },
-                transition: "background-color 0.3s ease",
-              }}
-            >
-              <Link to="/exam-statistics" style={{ textDecoration: "none" }}>
-                <Typography
-                  variant="body2"
-                  component="span"
-                  sx={{ fontWeight: 600, color: "white" }}
-                >
-                  Statistics
-                </Typography>
+            </div>
+
+            {/* Desktop Navigation Links */}
+            <div className="hidden md:ml-10 md:flex md:space-x-4">
+              <Link
+                to="/previous-exams"
+                className="px-4 py-2 rounded-md text-white font-medium hover:bg-indigo-700 transition-colors duration-200 flex items-center"
+              >
+                <AcademicCapIcon className="h-5 w-5 mr-1" />
+                Previous Exams
               </Link>
-            </Typography>
-            <IconButton
-              size="large"
-              edge="end"
-              aria-label="account of current user"
-              aria-controls={menuId}
-              aria-haspopup="true"
-              onClick={handleProfileMenuOpen}
-              color="inherit"
-            >
-              {userData?.image ? (
-                <Avatar
-                  src={userData.image}
-                  alt="Profile"
-                  sx={{ width: 40, height: 40 }}
-                />
-              ) : (
-                <AccountCircle sx={{ width: 40, height: 40 }} />
+
+              <Link
+                to="/exam-statistics"
+                className="px-4 py-2 rounded-md text-white font-medium hover:bg-indigo-700 transition-colors duration-200 flex items-center"
+              >
+                <ChartBarIcon className="h-5 w-5 mr-1" />
+                Statistics
+              </Link>
+            </div>
+          </div>
+
+          {/* Profile Menu (Desktop) */}
+          <div className="hidden md:flex md:items-center">
+            <div className="ml-3 relative">
+              <div>
+                <button
+                  onClick={toggleProfileMenu}
+                  className="flex items-center text-white hover:text-gray-200 focus:outline-none"
+                >
+                  {userData?.image ? (
+                    <img
+                      className="h-8 w-8 rounded-full object-cover border-2 border-white"
+                      src={userData.image}
+                      alt="Profile"
+                    />
+                  ) : (
+                    <UserCircleIcon className="h-8 w-8" />
+                  )}
+                  <ChevronDownIcon className="ml-1 h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Profile Dropdown */}
+              {isProfileMenuOpen && (
+                <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 z-50">
+                  <Link
+                    to="/profile"
+                    onClick={() => setIsProfileMenuOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Profile
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Logout
+                  </button>
+                </div>
               )}
-            </IconButton>
-          </Box>
-        </Toolbar>
-      </AppBar>
+            </div>
+          </div>
 
-      {/* Mobile Drawer */}
-      <Drawer
-        sx={{
-          width: drawerWidth,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: drawerWidth,
-            boxSizing: "border-box",
-          },
-          display: { xs: "block", md: "none" },
-        }}
-        variant="transparents"
-        anchor="left"
-        open={open}
-        onClose={handleDrawerClose}
-      >
-        <DrawerHeader>
-          <Typography
-            component={Link}
-            onClick={handleDrawerClose}
-            to="/"
-            style={{ textDecoration: "none", color: "black" }}
-            variant="h6"
-            noWrap
-            sx={{ flexGrow: 1, textAlign: "center", fontWeight: 700 }}
-          >
-            AiExaminer
-          </Typography>
-          <IconButton onClick={handleDrawerClose}>
-            {theme.direction === "ltr" ? (
-              <ChevronLeftIcon />
-            ) : (
-              <ChevronRightIcon />
-            )}
-          </IconButton>
-        </DrawerHeader>
+          {/* Mobile menu button */}
+          <div className="flex md:hidden items-center">
+            <button
+              onClick={toggleMobileMenu}
+              className="inline-flex items-center justify-center p-2 rounded-md text-white hover:text-gray-200 focus:outline-none"
+            >
+              {isOpen ? (
+                <XMarkIcon className="block h-6 w-6" />
+              ) : (
+                <Bars3Icon className="block h-6 w-6" />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
 
-        <Divider sx={{ my: 1, backgroundColor: "rgba(9, 9, 9, 0.4)" }} />
-
-        <List>
-          {/* Navigation Items */}
-
-          <ListItem disablePadding>
-            <ListItemButton
-              component={Link}
+      {/* Mobile menu */}
+      {isOpen && (
+        <div className="md:hidden bg-black text-white shadow-lg">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <Link
               to="/previous-exams"
-              onClick={handleDrawerClose}
+              onClick={toggleMobileMenu}
+              className="flex items-center text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-700"
             >
-              <ListItemText primary="Previous Exams" />
-            </ListItemButton>
-          </ListItem>
+              <AcademicCapIcon className="h-5 w-5 mr-2" />
+              Previous Exams
+            </Link>
 
-          <ListItem disablePadding>
-            <ListItemButton
-              component={Link}
+            <Link
               to="/exam-statistics"
-              onClick={handleDrawerClose}
+              onClick={toggleMobileMenu}
+              className="flex items-center text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-700"
             >
-              <ListItemText primary="Statistics" />
-            </ListItemButton>
-          </ListItem>
+              <ChartBarIcon className="h-5 w-5 mr-2" />
+              Statistics
+            </Link>
+          </div>
 
-          <Divider sx={{ my: 1, backgroundColor: "rgba(9, 9, 9, 0.4)" }} />
-
-          {/* Profile */}
-          <ListItem disablePadding>
-            <ListItemButton
-              component={Link}
-              to="/profile"
-              onClick={handleDrawerClose}
-            >
-              <ListItemText primary="Profile" />
-              <ListItemIcon>
+          <div className="pt-4 pb-3 border-t border-indigo-700">
+            <div className="flex items-center px-5">
+              <div className="flex-shrink-0">
                 {userData?.image ? (
-                  <Avatar
+                  <img
+                    className="h-10 w-10 rounded-full object-cover border-2 border-white"
                     src={userData.image}
                     alt="Profile"
-                    sx={{ width: 24, height: 24 }}
                   />
                 ) : (
-                  <AccountCircle />
+                  <UserCircleIcon className="h-10 w-10 text-white" />
                 )}
-              </ListItemIcon>
-            </ListItemButton>
-          </ListItem>
-
-          {/* Logout */}
-          <ListItem disablePadding>
-            <ListItemButton onClick={handleLogout}>
-              <ListItemText primary="Logout" />
-              <ListItemIcon>
-                <LogoutIcon />
-              </ListItemIcon>
-            </ListItemButton>
-          </ListItem>
-        </List>
-      </Drawer>
-
-      {mobileMenu}
-      {renderAccountMenu}
-    </Box>
+              </div>
+              <div className="ml-3">
+                <div className="text-base font-medium text-white">
+                  {userData?.username || "User"}
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 px-2 space-y-1">
+              <Link
+                to="/profile"
+                onClick={toggleMobileMenu}
+                className="flex items-center text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-700"
+              >
+                <UserCircleIcon className="h-5 w-5 mr-2" />
+                Profile
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="flex items-center w-full text-left text-white px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-700"
+              >
+                <ArrowRightOnRectangleIcon className="h-5 w-5 mr-2" />
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </nav>
   );
 }
