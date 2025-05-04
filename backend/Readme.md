@@ -33,7 +33,13 @@ AI Examiner is an innovative platform that leverages artificial intelligence to 
 ### 🔒 Secure & Reliable
 - JWT authentication
 - Password reset and change functionality
+- Firebase social authentication
 - Data encryption
+
+## For Authentication details:
+   ```
+     https://github.com/AHMED-SAFA/Complete-Auth.git
+   ```
 
 ## 🛠️ Technology Stack
 
