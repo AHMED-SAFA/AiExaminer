@@ -352,7 +352,7 @@ class GenerateAISuggestions(APIView):
     cd AiExaminer/backend
    ```
 3. Create and activate virtual environment
-   ````
+   ```
     python -m venv venv
     source venv/Scripts/activate
     venv\Scripts\activate  - On Windows
