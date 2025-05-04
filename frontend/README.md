@@ -155,7 +155,7 @@ Optimized layout that adapts beautifully across mobile, tablet, and desktop scre
 </summary>
 <br>
 
-![stat3](https://github.com/user-attachments/assets/f7185510-a39b-4c64-bbda-10fea3ce1791)
+![stat1](https://github.com/user-attachments/assets/b648736b-4d98-42db-8493-72b571bdde84)
 
 ![stat2](https://github.com/user-attachments/assets/12faee35-7ec1-47d9-92e5-f2800105dbac)
 
