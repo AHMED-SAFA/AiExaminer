@@ -7,6 +7,9 @@ from django.db import transaction
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.fonts import addMapping
 from reportlab.lib import colors
 from .models import Exam, Question, Option
 from .serializers import (
@@ -342,7 +345,7 @@ class GenerateAnswerOptionsView(APIView):
             return []
 
     def generate_output_pdf(self, exam, questions):
-        """Generate a formatted PDF with questions and answers based on content format"""
+        """Generate a formatted PDF with questions and answers that supports Bengali"""
         try:
             # Create output directory if it doesn't exist
             output_dir = os.path.join(settings.MEDIA_ROOT, "exam_outputs")
@@ -352,31 +355,62 @@ class GenerateAnswerOptionsView(APIView):
             output_filename = f"exam_{exam.id}_processed_{int(time.time())}.pdf"
             output_path = os.path.join(output_dir, output_filename)
 
+            # Bengali font "Kalpurush"
+            font_path = os.path.join(
+                settings.BASE_DIR, "static", "fonts", "kalpurush.ttf"
+            )
+
+            if os.path.exists(font_path):
+                pdfmetrics.registerFont(TTFont("Bangla", font_path))
+                pdfmetrics.registerFont(TTFont("BanglaBold", font_path))
+                addMapping("Bangla", 0, 0, "Bangla") 
+                addMapping("Bangla", 1, 0, "BanglaBold")  
+            else:
+                print("Warning: Bengali font not found at", font_path)
+                pdfmetrics.registerFont(TTFont("Bangla", "ArialUnicodeMS"))
+                pdfmetrics.registerFont(TTFont("BanglaBold", "ArialUnicodeMS"))
+
             # Create PDF document
             doc = SimpleDocTemplate(output_path, pagesize=letter)
             styles = getSampleStyleSheet()
 
-            # Define custom styles
+            # Define custom styles with Bengali support
             title_style = ParagraphStyle(
                 "Title",
                 parent=styles["Heading1"],
                 fontSize=16,
                 alignment=1,
+                fontName=(
+                    "BanglaBold" if exam.language == "bangla" else "Helvetica-Bold"
+                ),
             )
 
             question_style = ParagraphStyle(
                 "Question",
                 parent=styles["Normal"],
                 fontSize=12,
-                fontName="Helvetica-Bold",
+                fontName=(
+                    "BanglaBold" if exam.language == "bangla" else "Helvetica-Bold"
+                ),
+                leading=14,
             )
 
             option_style = ParagraphStyle(
-                "Option", parent=styles["Normal"], fontSize=11, leftIndent=20
+                "Option",
+                parent=styles["Normal"],
+                fontSize=11,
+                leftIndent=20,
+                fontName="Bangla" if exam.language == "bangla" else "Helvetica",
+                leading=12,
             )
 
             correct_style = ParagraphStyle(
-                "CorrectOption", parent=option_style, textColor=colors.green
+                "CorrectOption",
+                parent=option_style,
+                textColor=colors.green,
+                fontName=(
+                    "BanglaBold" if exam.language == "bangla" else "Helvetica-Bold"
+                ),
             )
 
             answer_style = ParagraphStyle(
@@ -385,27 +419,40 @@ class GenerateAnswerOptionsView(APIView):
                 fontSize=11,
                 textColor=colors.blue,
                 leftIndent=20,
-                fontName="Helvetica-Bold",
+                fontName=(
+                    "BanglaBold" if exam.language == "bangla" else "Helvetica-Bold"
+                ),
             )
 
             # Build content
             content = []
 
             # Add title
-            content.append(Paragraph(f"Exam: {exam.title}", title_style))
+            content.append(
+                Paragraph(f"Exam: {exam.title}", title_style)
+                if exam.language == "bangla"
+                else Paragraph(f"Exam: {exam.title}", title_style)
+            )
             content.append(Spacer(1, 12))
 
             # Add exam format info
-            format_text = f"Format: {'Multiple Choice Exam' if exam.questions.first().has_options else 'Question and Answer Exam'}"
+            format_text = (
+                (
+                    "Formate: MCQ"
+                    if exam.questions.first().has_options
+                    else "ফরম্যাট: প্রশ্ন এবং উত্তর পরীক্ষা"
+                )
+                if exam.language == "bangla"
+                else f"Format: {'Multiple Choice Exam' if exam.questions.first().has_options else 'Question and Answer Exam'}"
+            )
             content.append(Paragraph(format_text, styles["Normal"]))
             content.append(Spacer(1, 12))
 
             # Add questions and options
             for i, question in enumerate(questions, 1):
-                # Question text
-                content.append(
-                    Paragraph(f"Q{i}. {question.question_text}", question_style)
-                )
+                # Question text - wrap in Unicode-friendly string
+                question_text = f"Q{i}. {question.question_text}"
+                content.append(Paragraph(question_text, question_style))
                 content.append(Spacer(1, 6))
 
                 # Handle options if they exist
@@ -423,12 +470,19 @@ class GenerateAnswerOptionsView(APIView):
 
             # Add footer with generation info
             generation_time = datetime.now(pytz.UTC).strftime("%Y-%m-%d %H:%M:%S GMT")
-            content.append(
-                Paragraph(f"Generated on: {generation_time}", styles["Normal"])
+            footer_text = (
+                f"Generated: {generation_time}"
+                if exam.language == "bangla"
+                else f"Generated on: {generation_time}"
             )
-            content.append(
-                Paragraph(f"Total Questions: {questions.count()}", styles["Normal"])
+            content.append(Paragraph(footer_text, styles["Normal"]))
+
+            total_q_text = (
+                f"Total question: {questions.count()}"
+                if exam.language == "bangla"
+                else f"Total Questions: {questions.count()}"
             )
+            content.append(Paragraph(total_q_text, styles["Normal"]))
 
             # Build PDF
             doc.build(content)

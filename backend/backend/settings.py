@@ -27,8 +27,9 @@ ALLOWED_HOSTS = []
 
 
 # Application definition
-
 INSTALLED_APPS = [
+    # change admin
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -49,6 +50,17 @@ INSTALLED_APPS = [
     "take_exam_app",
     "statistics_app",
 ]
+
+
+JAZZMIN_SETTINGS = {
+    "site_title": "AiExaminer",
+    "site_header": "AiExaminer Administration",
+    "site_brand": "AiExaminer",
+    "welcome_sign": "Welcome to the admin panel",
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "theme": "dark",
+}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -91,15 +103,12 @@ DATABASES = {
         # "ENGINE": "django.db.backends.sqlite3",
         # "NAME": BASE_DIR / "db.sqlite3",
         "ENGINE": "django.db.backends.postgresql",
-        'NAME': 'AiExaminer',
-        'USER': 'safa',
-        'PASSWORD': '123456',
+        "NAME": "AiExaminer",
+        "USER": "safa",
+        "PASSWORD": "123456",
         "HOST": "localhost",
-        "PORT": "5432", 
-        "OPTIONS": {
-            "client_encoding": "UTF8",
-            "sslmode": "disable"
-        },
+        "PORT": "5432",
+        "OPTIONS": {"client_encoding": "UTF8", "sslmode": "disable"},
     }
 }
 
@@ -139,6 +148,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # For production
 
 # Media files (User uploaded content)
 MEDIA_URL = "/media/"
@@ -198,6 +211,3 @@ PASSWORD_RESET_TIMEOUT = 600  # 10 minutes in seconds
 
 FIREBASE_CREDENTIALS_PATH = BASE_DIR / "credentials" / "firebase-adminsdk.json"
 FRONTEND_URL = "http://localhost:5173"
-
-
-

@@ -119,6 +119,9 @@ const CreateExamModal = ({ open, handleClose, handleSubmit }) => {
             <Box>
               <Typography variant="subtitle1" gutterBottom>
                 Upload Question PDF/Text file*
+                <Typography variant="caption" color="error">
+                  (Must contain maximum 5000 characters)
+                </Typography>
               </Typography>
               <Button
                 component="label"
@@ -135,7 +138,11 @@ const CreateExamModal = ({ open, handleClose, handleSubmit }) => {
                 />
               </Button>
               {examData.pdfFile && (
-                <Typography variant="body2" sx={{ mt: 1 }}>
+                <Typography
+                  helperText="Value to deduct for wrong answers (e.g., 0.25 means 1/4th mark)"
+                  variant="body2"
+                  sx={{ mt: 1 }}
+                >
                   Selected file: {examData.pdfFile.name}
                 </Typography>
               )}
