@@ -21,3 +21,10 @@ Used <strong> Django(Backend) </strong> and <strong> React.js(Frontend) </strong
 - Chart.js for data visualization
 - Firebase JS SDK for frontend auth (Google login, etc.)
 - Session/Cookie storage
+
+
+<div align="center">
+  
+https://github.com/user-attachments/assets/3ac7b57c-f5fa-4f35-b089-e729bbda033e
+
+</div>
