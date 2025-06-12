@@ -15,6 +15,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 # Environment variables
 GEMINI_API_KEY = env('GEMINI_API_KEY')
 DEEPSEEK_API_KEY = env('DEEPSEEK_API_KEY')
+GROQ_API_KEY = env('GROQ_API_KEY')
 SECRET_KEY = env('SECRET_KEY')
 # DEBUG = env.bool('DEBUG', default=False)
 DEBUG = True
@@ -95,9 +96,6 @@ TEMPLATES = [
 WSGI_APPLICATION = "backend.wsgi.application"
 
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 DATABASES = {
     "default": {
         # "ENGINE": "django.db.backends.sqlite3",
@@ -112,9 +110,6 @@ DATABASES = {
     }
 }
 
-
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -132,9 +127,6 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
-
 LANGUAGE_CODE = "en-us"
 
 TIME_ZONE = "UTC"
@@ -143,9 +135,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [
@@ -157,8 +146,6 @@ STATICFILES_DIRS = [
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

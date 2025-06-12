@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -20,7 +19,12 @@ import {
   Badge,
   Divider,
 } from "@mui/material";
-import { PhotoCamera, Visibility, VisibilityOff, PersonAddAlt } from "@mui/icons-material";
+import {
+  PhotoCamera,
+  Visibility,
+  VisibilityOff,
+  PersonAddAlt,
+} from "@mui/icons-material";
 import { motion } from "framer-motion";
 import usePageTitle from "../../hooks/usePageTitle";
 
@@ -118,9 +122,9 @@ const Register = () => {
       transition: {
         when: "beforeChildren",
         staggerChildren: 0.2,
-        duration: 0.5
-      }
-    }
+        duration: 0.5,
+      },
+    },
   };
 
   const itemVariants = {
@@ -128,15 +132,16 @@ const Register = () => {
     visible: {
       y: 0,
       opacity: 1,
-      transition: { duration: 0.5 }
-    }
+      transition: { duration: 0.5 },
+    },
   };
 
   return (
     <Box
       sx={{
         minHeight: "100vh",
-        background: "radial-gradient(circle at 10% 20%, rgb(0, 93, 133) 0%, rgb(0, 181, 149) 90%)",
+        background:
+          "radial-gradient(circle at 10% 20%, rgb(0, 93, 133) 0%, rgb(0, 181, 149) 90%)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -204,24 +209,23 @@ const Register = () => {
                       alignItems: "center",
                       justifyContent: "center",
                       borderRadius: "16px",
-                      background: "linear-gradient(45deg, #005d85 30%, #00b595 90%)",
+                      background:
+                        "linear-gradient(45deg, #005d85 30%, #00b595 90%)",
                       padding: "10px",
                       mb: 2,
                       boxShadow: "0 4px 20px rgba(0, 93, 133, 0.3)",
                     }}
                   >
-                    <PersonAddAlt
-                      sx={{ fontSize: 40, color: "#ffffff" }}
-                    />
+                    <PersonAddAlt sx={{ fontSize: 40, color: "#ffffff" }} />
                   </Box>
-                  <Typography 
-                    component="h1" 
-                    variant="h4" 
+                  <Typography
+                    component="h1"
+                    variant="h4"
                     fontWeight="bold"
                     color="#005d85"
-                    sx={{ 
+                    sx={{
                       letterSpacing: "0.5px",
-                      textShadow: "0 1px 2px rgba(0,0,0,0.1)"
+                      textShadow: "0 1px 2px rgba(0,0,0,0.1)",
                     }}
                   >
                     Create Account
@@ -236,7 +240,11 @@ const Register = () => {
                 </Box>
               </motion.div>
 
-              <Box component="form" onSubmit={handleSubmit} sx={{ width: "100%" }}>
+              <Box
+                component="form"
+                onSubmit={handleSubmit}
+                sx={{ width: "100%" }}
+              >
                 {/* Profile Image Upload */}
                 <motion.div variants={itemVariants}>
                   <Box
@@ -337,7 +345,7 @@ const Register = () => {
                         "&.Mui-focused": {
                           backgroundColor: "#ffffff",
                           boxShadow: "0 0 0 2px rgba(0,181,149,0.2)",
-                        }
+                        },
                       },
                     }}
                   />
@@ -366,7 +374,7 @@ const Register = () => {
                         "&.Mui-focused": {
                           backgroundColor: "#ffffff",
                           boxShadow: "0 0 0 2px rgba(0,181,149,0.2)",
-                        }
+                        },
                       },
                     }}
                   />
@@ -387,12 +395,12 @@ const Register = () => {
                         "&.Mui-focused": {
                           backgroundColor: "#ffffff",
                           boxShadow: "0 0 0 2px rgba(0,181,149,0.2)",
-                        }
+                        },
                       },
                     }}
                   >
                     <InputLabel htmlFor="outlined-adornment-password">
-                      Password*
+                      Password<span style={{ color: "#FF0000" }}> *</span>
                     </InputLabel>
                     <OutlinedInput
                       id="outlined-adornment-password"
@@ -415,6 +423,14 @@ const Register = () => {
                       }
                       label="Password"
                     />
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ ml: 1, mt: 0.5, display: "block" }}
+                    >
+                      Password must be at least 8 characters long and contain
+                      letters
+                    </Typography>
                   </FormControl>
                 </motion.div>
 
@@ -433,12 +449,13 @@ const Register = () => {
                         "&.Mui-focused": {
                           backgroundColor: "#ffffff",
                           boxShadow: "0 0 0 2px rgba(0,181,149,0.2)",
-                        }
+                        },
                       },
                     }}
                   >
                     <InputLabel htmlFor="outlined-adornment-password2">
-                      Confirm Password*
+                      Confirm Password
+                      <span style={{ color: "#FF0000" }}> *</span>
                     </InputLabel>
                     <OutlinedInput
                       id="outlined-adornment-password2"
@@ -475,7 +492,8 @@ const Register = () => {
                       borderRadius: 3,
                       fontWeight: 600,
                       boxShadow: "0 4px 14px rgba(0,93,133,0.3)",
-                      background: "linear-gradient(45deg, #005d85 30%, #00b595 90%)",
+                      background:
+                        "linear-gradient(45deg, #005d85 30%, #00b595 90%)",
                       position: "relative",
                       overflow: "hidden",
                       "&:hover": {
@@ -489,12 +507,13 @@ const Register = () => {
                         left: "-100%",
                         width: "100%",
                         height: "100%",
-                        background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)",
+                        background:
+                          "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)",
                         animation: "shine 1.5s infinite",
                       },
                       "@keyframes shine": {
                         "0%": { left: "-100%" },
-                        "100%": { left: "100%" }
+                        "100%": { left: "100%" },
                       },
                       transition: "all 0.3s ease",
                     }}
@@ -527,8 +546,12 @@ const Register = () => {
                           fontWeight: 600,
                           transition: "all 0.2s ease",
                         }}
-                        onMouseOver={(e) => e.currentTarget.style.color = "#00b595"}
-                        onMouseOut={(e) => e.currentTarget.style.color = "#005d85"}
+                        onMouseOver={(e) =>
+                          (e.currentTarget.style.color = "#00b595")
+                        }
+                        onMouseOut={(e) =>
+                          (e.currentTarget.style.color = "#005d85")
+                        }
                       >
                         Sign In
                       </Link>

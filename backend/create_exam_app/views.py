@@ -27,10 +27,8 @@ import json
 import re
 import requests
 
-genai.configure(api_key=settings.GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-1.5-flash")
-DEEPSEEK_API_KEY = settings.DEEPSEEK_API_KEY
-DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
+GROQ_API_KEY = settings.GROQ_API_KEY
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
 class CreateExamView(APIView):
@@ -90,7 +88,7 @@ class GenerateAnswerOptionsView(APIView):
             if not text.strip():
                 raise ValueError("No readable text found in PDF")
 
-            print(f"Extracted text from PDF (first 100 chars): {text[:100]}")
+            print(f"Extracted text from PDF (first 10 chars): {text[:10]}")
             return text
         except Exception as e:
             print(f"PDF extraction error: {str(e)}")
@@ -111,7 +109,6 @@ class GenerateAnswerOptionsView(APIView):
 
     def detect_language(self, text_sample):
         """Detect if text is primarily in Bangla, English, or mixed"""
-
         try:
             prompt = f"""Analyze this text and determine its language.
             
@@ -125,8 +122,8 @@ class GenerateAnswerOptionsView(APIView):
             
             Return only one of these three values without any additional text."""
 
-            response = model.generate_content(prompt)
-            language = response.text.strip().lower()
+            response = self.generate_with_groq(prompt)
+            language = response.strip().lower()
 
             print(f"Language detection result: {language}")
 
@@ -164,11 +161,8 @@ class GenerateAnswerOptionsView(APIView):
             
             Return only one of these four values without any additional text."""
 
-            response = model.generate_content(prompt)
-            analysis = response.text.strip().lower()
-
-            print(f"Content format analysis: {analysis}")
-            print(f"Content language: {language}")
+            response = self.generate_with_groq(prompt)
+            analysis = response.strip().lower()
 
             # Return both format and language
             format_result = "questions_only"
@@ -182,11 +176,11 @@ class GenerateAnswerOptionsView(APIView):
             return format_result, language
 
         except Exception as e:
-            print(f"Error analyzing questions: {str(e)}")
             return "questions_only", "english"
 
+    # Replace the extract_questions method
     def extract_questions(self, exam_content, language):
-        """Extract questions using Gemini with robust error handling and language support"""
+        """Extract questions using DeepSeek API with robust error handling and language support"""
         try:
             # Limit content but take enough to capture multiple questions
             content_sample = exam_content[:7000]
@@ -217,11 +211,8 @@ class GenerateAnswerOptionsView(APIView):
             Content:
             {content_sample}"""
 
-            response = model.generate_content(prompt)
-            response_text = response.text.strip()
-
-            # Debug the response
-            print(f"Extract questions raw response: {response_text[:200]}...")
+            response = self.generate_with_groq(prompt)
+            response_text = response.strip()
 
             # Try to find JSON in the response (looking for { ... })
             json_match = re.search(r"({.*})", response_text, re.DOTALL)
@@ -233,34 +224,13 @@ class GenerateAnswerOptionsView(APIView):
                 raise ValueError("Could not find valid JSON in the response")
 
         except json.JSONDecodeError as e:
-            print(f"JSON decode error: {str(e)}")
-            print(f"Response that couldn't be parsed: {response_text}")
-            # Fallback: Try to extract questions manually
             return self.fallback_question_extraction(response_text)
         except Exception as e:
-            print(f"Error extracting questions: {str(e)}")
             return []
 
-    def fallback_question_extraction(self, text):
-        """Extract questions manually if JSON parsing fails"""
-        try:
-            questions = []
-            # Pattern for numbered questions
-            numbered_questions = re.findall(r"\d+\.\s*([^\n]+\?)", text)
-
-            # Pattern for questions ending with question marks
-            question_marks = re.findall(r"([^.!?\n]+\?)", text)
-
-            # Combine and deduplicate
-            all_questions = set(numbered_questions + question_marks)
-
-            return [{"text": q.strip()} for q in all_questions if len(q.strip()) > 10]
-        except Exception as e:
-            print(f"Fallback extraction failed: {str(e)}")
-            return []
-
+    # Replace the generate_options_and_answers method
     def generate_options_and_answers(self, question_text, options_count, language):
-        """Generate options using Gemini with improved prompt for reliable JSON and language support"""
+        """Generate options using DeepSeek API with improved prompt for reliable JSON and language support"""
         try:
             language_instruction = ""
             if language == "bangla":
@@ -268,7 +238,6 @@ class GenerateAnswerOptionsView(APIView):
                     "Create the options in Bangla language to match the question."
                 )
             elif language == "mixed":
-                # Check if the question is primarily Bangla or English
                 if self.detect_language(question_text) == "bangla":
                     language_instruction = (
                         "Create the options in Bangla language to match the question."
@@ -302,11 +271,8 @@ class GenerateAnswerOptionsView(APIView):
             
             Your formatted JSON response:"""
 
-            response = model.generate_content(prompt)
-            response_text = response.text.strip()
-
-            # Debug
-            print(f"Options generation raw response: {response_text[:200]}...")
+            response = self.generate_with_groq(prompt)
+            response_text = response.strip()
 
             json_match = re.search(r"({.*})", response_text, re.DOTALL)
             if json_match:
@@ -342,6 +308,108 @@ class GenerateAnswerOptionsView(APIView):
 
         except Exception as e:
             print(f"Error generating options: {str(e)}")
+            return []
+
+    def extract_questions_with_options(self, exam_content, language):
+        """Extract questions and their options using DeepSeek API with language support"""
+        try:
+            content_sample = exam_content[:10000]
+
+            language_instruction = ""
+            if language == "bangla":
+                language_instruction = "Extract the questions and options while preserving the original Bangla language."
+            elif language == "mixed":
+                language_instruction = "Extract the questions and options, preserving both Bangla and English text as they appear."
+
+            prompt = f"""Extract all questions and all their multiple choice options from 
+            this exam content.
+            
+            {language_instruction}
+            
+            Format your response as strict JSON with this structure:
+            {{
+                "questions": [
+                    {{
+                        "text": "Question text",
+                        "options": [
+                            {{"text": "Option 1"}},
+                            {{"text": "Option 2"}},
+                            {{"text": "Option 3"}},
+                            {{"text": "Option 4"}},
+                            ...
+                        ]
+                    }},
+                    ...
+                ]
+            }}
+            
+            Include ONLY the JSON in your response, with no additional text or markdown formatting.
+            
+            Content:
+            {content_sample}"""
+
+            response = self.generate_with_groq(prompt)
+            response_text = response.strip()
+
+            # Debug the response
+            print(
+                f"Extract questions with options raw response: {response_text[:200]}..."
+            )
+
+            # Try to find JSON in the response (looking for { ... })
+            json_match = re.search(r"({.*})", response_text, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(1)
+                questions_data = json.loads(json_str)
+                return questions_data.get("questions", [])
+            else:
+                raise ValueError("Could not find valid JSON in the response")
+
+        except json.JSONDecodeError as e:
+            return []
+        except Exception as e:
+            print(f"Error extracting questions with options: {str(e)}")
+            return []
+
+    def identify_correct_answers(self, question_text, options_list):
+        """Identify the correct answer from options using DeepSeek API"""
+        try:
+            options_text = "\n".join([f"{i+1}. {opt['option_text']}" for i, opt in enumerate(options_list)])
+            
+            prompt = f"""Given this question and options, identify which option is correct.
+            
+            Question: {question_text}
+            
+            Options:
+            {options_text}
+            
+            Respond with only the number (1, 2, 3, etc.) of the correct option."""
+            
+            response = self.generate_with_groq(prompt)
+            correct_number = int(response.strip())
+            return correct_number - 1 
+            
+        except Exception as e:
+            print(f"Error identifying correct answer: {str(e)}")
+            return 0
+
+
+    def fallback_question_extraction(self, text):
+        """Extract questions manually if JSON parsing fails"""
+        try:
+            questions = []
+            # Pattern for numbered questions
+            numbered_questions = re.findall(r"\d+\.\s*([^\n]+\?)", text)
+
+            # Pattern for questions ending with question marks
+            question_marks = re.findall(r"([^.!?\n]+\?)", text)
+
+            # Combine and deduplicate
+            all_questions = set(numbered_questions + question_marks)
+
+            return [{"text": q.strip()} for q in all_questions if len(q.strip()) > 10]
+        except Exception as e:
+            print(f"Fallback extraction failed: {str(e)}")
             return []
 
     def generate_output_pdf(self, exam, questions):
@@ -496,93 +564,34 @@ class GenerateAnswerOptionsView(APIView):
             print(f"Error generating output PDF: {str(e)}")
             return None
 
-    def extract_questions_with_options(self, exam_content, language):
-        """Extract questions and their options using Gemini with language support"""
-        try:
-            content_sample = exam_content[:10000]
 
-            language_instruction = ""
-            if language == "bangla":
-                language_instruction = "Extract the questions and options while preserving the original Bangla language."
-            elif language == "mixed":
-                language_instruction = "Extract the questions and options, preserving both Bangla and English text as they appear."
-
-            prompt = f"""Extract all questions and all their multiple choice options from 
-            this exam content.
-            
-            {language_instruction}
-            
-            Format your response as strict JSON with this structure:
-            {{
-                "questions": [
-                    {{
-                        "text": "Question text",
-                        "options": [
-                            {{"text": "Option 1"}},
-                            {{"text": "Option 2"}},
-                            {{"text": "Option 3"}},
-                            {{"text": "Option 4"}},
-                            ...
-                        ]
-                    }},
-                    ...
-                ]
-            }}
-            
-            Include ONLY the JSON in your response, with no additional text or markdown formatting.
-            
-            Content:
-            {content_sample}"""
-
-            response = model.generate_content(prompt)
-            response_text = response.text.strip()
-
-            # Debug the response
-            print(
-                f"Extract questions with options raw response: {response_text[:200]}..."
-            )
-
-            # Try to find JSON in the response (looking for { ... })
-            json_match = re.search(r"({.*})", response_text, re.DOTALL)
-            if json_match:
-                json_str = json_match.group(1)
-                questions_data = json.loads(json_str)
-                return questions_data.get("questions", [])
-            else:
-                raise ValueError("Could not find valid JSON in the response")
-
-        except json.JSONDecodeError as e:
-            print(f"JSON decode error: {str(e)}")
-            print(f"Response that couldn't be parsed: {response_text}")
-            return []
-        except Exception as e:
-            print(f"Error extracting questions with options: {str(e)}")
-            return []
-
-    def generate_with_deepseek(self, prompt, max_retries=3):
-        """Generate content using DeepSeek API"""
+    def generate_with_groq(self, prompt, max_retries=3):
+        
+        """Generate content using Groq API"""
         headers = {
-            "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+            "Authorization": f"Bearer {GROQ_API_KEY}",
             "Content-Type": "application/json",
         }
 
         payload = {
-            "model": "deepseek-chat",
+            "model": "llama-3.1-8b-instant",
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.7,
-            "max_tokens": 4000,
+            "max_tokens": 2000,
+            "stream": False
         }
 
         for attempt in range(max_retries):
             try:
                 response = requests.post(
-                    DEEPSEEK_API_URL, headers=headers, json=payload
+                    GROQ_API_URL, headers=headers, json=payload
                 )
                 response.raise_for_status()
                 data = response.json()
+                print(f"data is {data}") 
                 return data["choices"][0]["message"]["content"]
             except Exception as e:
-                print(f"DeepSeek API attempt {attempt + 1} failed: {str(e)}")
+                print(f"Groq API attempt {attempt + 1} failed: {str(e)}")
                 if attempt == max_retries - 1:
                     raise
                 time.sleep(1)  # Wait before retrying
@@ -782,8 +791,9 @@ class GenerateAnswerOptionsView(APIView):
                             Include ONLY the JSON in your response."""
 
                             try:
-                                response = model.generate_content(prompt)
-                                response_text = response.text.strip()
+
+                                response = self.generate_with_groq(prompt)
+                                response_text = response.strip()
 
                                 json_match = re.search(
                                     r"({.*})", response_text, re.DOTALL
@@ -797,7 +807,7 @@ class GenerateAnswerOptionsView(APIView):
                                         Option.objects.create(
                                             question=question,
                                             option_text=option_data["text"],
-                                            is_correct=False,  # Will identify correct answer later
+                                            is_correct=False, 
                                             is_ai_generated=False,
                                         )
                                         options_created += 1
