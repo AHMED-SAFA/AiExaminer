@@ -1,8 +1,6 @@
-# serializers.py
 from rest_framework import serializers
 from .models import Exam, Question, Option, ExamSession, UserAnswer
-import magic
-
+import filetype 
 
 class ExamCreateSerializer(serializers.ModelSerializer):
     """Serializer for exam creation with validation"""
@@ -21,7 +19,7 @@ class ExamCreateSerializer(serializers.ModelSerializer):
             "mcq_options_count",
             "created_at",
             "output_pdf",
-            "question_count" 
+            "question_count",
         ]
         read_only_fields = ["id", "created_at"]
 
@@ -31,12 +29,41 @@ class ExamCreateSerializer(serializers.ModelSerializer):
         if value.size > 10 * 1024 * 1024:
             raise serializers.ValidationError("File size cannot exceed 10MB")
 
-        # Check file type
-        file_type = magic.from_buffer(value.read(1024), mime=True)
-        value.seek(0)
+        # Get the file extension and content type
+        file_name = value.name.lower()
+        content_type = value.content_type.lower()
 
-        if file_type not in ["application/pdf", "text/plain"]:
+        # List of allowed extensions and content types
+        allowed_extensions = ['.pdf', '.txt']
+        allowed_content_types = [
+            'application/pdf',
+            'text/plain',
+            'application/x-pdf',
+            'application/acrobat',
+            'application/vnd.pdf',
+        ]
+
+        # Check file extension
+        if not any(file_name.endswith(ext) for ext in allowed_extensions):
             raise serializers.ValidationError("Only PDF and text files are accepted")
+
+        # Check content type
+        if content_type not in allowed_content_types:
+            raise serializers.ValidationError("Invalid file type. Only PDF and text files are accepted")
+
+        try:
+            # For PDF files, verify the file header
+            if file_name.endswith('.pdf'):
+                # Read first few bytes to check PDF signature
+                file_header = value.read(5)
+                value.seek(0)  # Reset file pointer to beginning
+                
+                # Check if file starts with PDF signature (%PDF-)
+                if not file_header.startswith(b'%PDF-'):
+                    raise serializers.ValidationError("Invalid PDF file format")
+
+        except Exception as e:
+            raise serializers.ValidationError(f"Error validating file: {str(e)}")
 
         return value
 
@@ -72,7 +99,13 @@ class QuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ["id", "question_text", "marks", "explanation", "options",]
+        fields = [
+            "id",
+            "question_text",
+            "marks",
+            "explanation",
+            "options",
+        ]
 
 
 class ExamDetailSerializer(serializers.ModelSerializer):
@@ -106,8 +139,9 @@ class ExamDetailSerializer(serializers.ModelSerializer):
 
 class UserAnswerSerializer(serializers.ModelSerializer):
     """Serializer for user exam answers"""
-    status = serializers.CharField(source='get_status_display', read_only=True)
-    
+
+    status = serializers.CharField(source="get_status_display", read_only=True)
+
     class Meta:
         model = UserAnswer
         fields = ["id", "question", "selected_option", "is_correct", "status"]
@@ -138,7 +172,7 @@ class ExamSessionSerializer(serializers.ModelSerializer):
             "end_time",
             "is_completed",
             "corrected_ans",
-            "wrong_ans", 
+            "wrong_ans",
             "score",
             "answers",
         ]

@@ -27,8 +27,10 @@ import {
   Key,
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
+import usePageTitle from "../../hooks/usePageTitle";
 
 const ResetPassword = () => {
+  usePageTitle("Reset Password");
   const { uidb64, token } = useParams();
   const [formData, setFormData] = useState({
     password: "",

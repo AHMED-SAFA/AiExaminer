@@ -22,8 +22,10 @@ import {
 } from "@mui/material";
 import { PhotoCamera, Visibility, VisibilityOff, PersonAddAlt } from "@mui/icons-material";
 import { motion } from "framer-motion";
+import usePageTitle from "../../hooks/usePageTitle";
 
 const Register = () => {
+  usePageTitle("Register");
   const [formData, setFormData] = useState({
     email: "",
     username: "",
@@ -518,7 +520,7 @@ const Register = () => {
                     <Typography variant="body2" color="text.secondary">
                       Already have an account?{" "}
                       <Link
-                        to="/login"
+                        to="/"
                         style={{
                           color: "#005d85",
                           textDecoration: "none",

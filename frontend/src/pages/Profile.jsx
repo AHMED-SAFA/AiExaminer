@@ -30,8 +30,10 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HowToRegIcon from "@mui/icons-material/HowToReg";
 import BadgeIcon from "@mui/icons-material/Badge";
 import { motion } from "framer-motion";
+import usePageTitle from "../hooks/usePageTitle";
 
 function Profile() {
+  usePageTitle("Profile");
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);

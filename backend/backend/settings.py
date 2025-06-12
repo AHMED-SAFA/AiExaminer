@@ -1,27 +1,26 @@
+import environ
 from pathlib import Path
 import os
 from datetime import timedelta
-from dotenv import load_dotenv
+
+# Initialize environ
+env = environ.Env()
+
+# Set the project base directory
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Take environment variables from .env file
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+
+# Environment variables
+GEMINI_API_KEY = env('GEMINI_API_KEY')
+DEEPSEEK_API_KEY = env('DEEPSEEK_API_KEY')
+SECRET_KEY = env('SECRET_KEY')
+# DEBUG = env.bool('DEBUG', default=False)
+DEBUG = True
 
 __all__ = ("celery_app",)
 
-
-# Load environment variables from .env file
-load_dotenv()
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-zvn!2==s%xb$7j7^m-do_2sbcopd4q%^!2!ys+e!8%q_*u&gb&"
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
 ALLOWED_HOSTS = []
 
@@ -63,6 +62,7 @@ JAZZMIN_SETTINGS = {
 }
 
 MIDDLEWARE = [
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -196,14 +196,14 @@ SIMPLE_JWT = {
 }
 
 
-# Email settings (for password reset and email verification)
+# Email settings
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.gmail.com"  # Replace with your SMTP server
+EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
+EMAIL_HOST_USER = env('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')
 
 AUTH_USER_MODEL = "auth_app.User"
 PASSWORD_RESET_TIMEOUT = 600  # 10 minutes in seconds

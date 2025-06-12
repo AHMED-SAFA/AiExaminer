@@ -25,12 +25,14 @@ import {
   IconButton,
 } from "@mui/material";
 import axios from "axios";
+import usePageTitle from "../../hooks/usePageTitle";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 const ExamSession = () => {
+  usePageTitle('Exam');
   const { examId } = useParams();
   const { token } = useAuth();
   const navigate = useNavigate();

@@ -72,7 +72,7 @@ const AuthRedirectRoute = ({ children, requireVerified = false }) => {
   }
 
   if (user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="dashboard" replace />;
   }
 
   return children;

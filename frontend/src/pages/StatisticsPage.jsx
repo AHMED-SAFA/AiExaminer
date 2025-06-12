@@ -59,6 +59,7 @@ import {
 import { RadarOutlined as RadarIcon } from "@mui/icons-material";
 import { HelpCircle, AlertTriangle } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import usePageTitle from "../hooks/usePageTitle";
 
 // Custom color palette
 const CHART_COLORS = {
@@ -83,6 +84,7 @@ const COLORS = [
 ];
 
 function StatisticsPage() {
+  usePageTitle("Exam Statistics");
   const theme = useTheme();
   const { token } = useAuth();
   const [loading, setLoading] = useState(true);

@@ -38,11 +38,13 @@ import DialogTitle from "@mui/material/DialogTitle";
 import Snackbar from "@mui/material/Snackbar";
 import { useAuth } from "../context/AuthContext";
 import PageTransition from "../components/PageTransition";
+import usePageTitle from "../hooks/usePageTitle";
 
 const DeleteModalTransition = forwardRef(function Transition(props, ref) {
   return <Slide direction="down" ref={ref} {...props} />;
 });
 function PreviousExam() {
+  usePageTitle("Previous Exams");
   const [examSessions, setExamSessions] = useState([]);
   const [, setUserData] = useState(null);
   const [userId, setUserId] = useState(null);

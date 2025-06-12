@@ -181,7 +181,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem("refreshToken");
       setToken(null);
       setUser(null);
-      navigate("/login");
+      navigate("/");
     } catch (error) {
       console.error("Logout error:", error);
 
@@ -190,7 +190,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem("refreshToken");
       setToken(null);
       setUser(null);
-      navigate("/login");
+      navigate("/");
     }
   };
 

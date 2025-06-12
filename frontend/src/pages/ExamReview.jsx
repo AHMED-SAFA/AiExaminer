@@ -29,8 +29,10 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useAuth } from "../context/AuthContext";
+import usePageTitle from "../hooks/usePageTitle";
 
 function ExamReview() {
+  usePageTitle("Eaxm Review");
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const [sessionData, setSessionData] = useState(null);

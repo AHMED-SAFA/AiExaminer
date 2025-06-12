@@ -1,6 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
-import ProtectedRoute from "./components/AuthComponents/ProtectedRoute";
 import AuthRedirectRoute from "./components/AuthComponents/AuthRedirectRoute";
 import Home from "./pages/Home";
 import Login from "./pages/AuthPages/Login";
@@ -32,11 +31,9 @@ function App() {
           <Route
             path="/"
             element={
-              <TokenProtectedRoutes>
-                <LayoutWithNavbar>
-                  <Home />
-                </LayoutWithNavbar>
-              </TokenProtectedRoutes>
+              <AuthRedirectRoute>
+                <Login />
+              </AuthRedirectRoute>
             }
           />
           <Route
@@ -90,11 +87,13 @@ function App() {
             }
           />
           <Route
-            path="/login"
+            path="dashboard"
             element={
-              <AuthRedirectRoute>
-                <Login />
-              </AuthRedirectRoute>
+              <TokenProtectedRoutes>
+                <LayoutWithNavbar>
+                  <Home />
+                </LayoutWithNavbar>
+              </TokenProtectedRoutes>
             }
           />
           <Route

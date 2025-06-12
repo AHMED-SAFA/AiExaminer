@@ -45,12 +45,14 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import IsoIcon from "@mui/icons-material/Iso";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
+import usePageTitle from "../hooks/usePageTitle";
 
 const DeleteModalTransition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
 const Home = () => {
+  usePageTitle("Dashboard");
   const navigate = useNavigate();
   const { token, user, userData } = useAuth();
   const [exams, setExams] = useState([]);

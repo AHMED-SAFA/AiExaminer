@@ -18,8 +18,10 @@ import {
 } from "@mui/material";
 import { LockReset, Email, ArrowBack } from "@mui/icons-material";
 import { motion } from "framer-motion";
+import usePageTitle from "../../hooks/usePageTitle";
 
 const ForgotPassword = () => {
+  usePageTitle("Forgot Password");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");

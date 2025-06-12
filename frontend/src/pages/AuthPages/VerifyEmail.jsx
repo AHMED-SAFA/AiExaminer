@@ -17,8 +17,10 @@ import {
 } from "@mui/material";
 import { Email, LockOutlined, MarkEmailRead } from "@mui/icons-material";
 import { motion } from "framer-motion";
+import usePageTitle from "../../hooks/usePageTitle";
 
 const VerifyEmail = () => {
+  usePageTitle("Verify Email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("");

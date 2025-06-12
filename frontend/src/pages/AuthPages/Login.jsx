@@ -21,8 +21,10 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import LoginIcon from "@mui/icons-material/Login";
 import { motion } from "framer-motion";
+import usePageTitle from "../../hooks/usePageTitle";
 
 const Login = () => {
+  usePageTitle("Login");
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
