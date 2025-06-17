@@ -1,9 +1,10 @@
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
+import { API_BASE_URL } from "../config/config";
 
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:8000/api",
-  withCredentials: true, //added
+  baseURL: `${API_BASE_URL}/api`,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
@@ -39,7 +40,7 @@ axiosInstance.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem("refreshToken");
         const response = await axios.post(
-          "http://localhost:8000/api/token/refresh/",
+          `${API_BASE_URL}/api/token/refresh/`,
           {
             refresh: refreshToken,
           }

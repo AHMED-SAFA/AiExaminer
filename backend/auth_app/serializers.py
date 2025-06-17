@@ -43,6 +43,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
             "email": self.user.email,
             "username": self.user.username,
             "is_verified": self.user.is_verified,
+            "image": self.user.image,
         }
         return data
 
@@ -115,6 +116,8 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Date of birth cannot be in the future.")
         return value
 
+    image = serializers.URLField(required=False, allow_null=True)
+    
     class Meta:
         model = User
         fields = (
@@ -129,7 +132,6 @@ class UserSerializer(serializers.ModelSerializer):
             "date_joined",
         )
         read_only_fields = ("id", "is_verified", "email")
-        # add velidator for mobile, dob,nationality
 
 
 class SetNewPasswordSerializer(serializers.Serializer):

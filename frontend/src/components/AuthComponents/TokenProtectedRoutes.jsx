@@ -41,7 +41,7 @@ function TokenProtectedRoutes({ children }) {
         <Button
           variant="contained"
           color="primary"
-          onClick={() => navigate("/login")}
+          onClick={() => navigate("/")}
           sx={{ mt: 2 }}
         >
           Go to Login

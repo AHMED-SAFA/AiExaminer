@@ -2,28 +2,46 @@ import environ
 from pathlib import Path
 import os
 from datetime import timedelta
+import dj_database_url
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 # Initialize environ
 env = environ.Env()
-
-# Set the project base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-# Take environment variables from .env file
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 # Environment variables
-GEMINI_API_KEY = env('GEMINI_API_KEY')
-DEEPSEEK_API_KEY = env('DEEPSEEK_API_KEY')
-GROQ_API_KEY = env('GROQ_API_KEY')
-SECRET_KEY = env('SECRET_KEY')
-# DEBUG = env.bool('DEBUG', default=False)
-DEBUG = True
+GEMINI_API_KEY = env("GEMINI_API_KEY")
+GROQ_API_KEY = env("GROQ_API_KEY")
+SECRET_KEY = env("SECRET_KEY")
+DEBUG = env.bool("DEBUG")
+
+# Cloudinary configuration
+cloudinary.config(
+    cloud_name = env('CLOUDINARY_CLOUD_NAME'),
+    api_key = env('CLOUDINARY_API_KEY'),
+    api_secret = env('CLOUDINARY_API_SECRET'),
+    secure = True
+)
+
+# supabase connect
+SUPABASE_URL = env("SUPABASE_URL")
+SUPABASE_KEY = env("SUPABASE_KEY")
+SUPABASE_INPUT_PDF_BUCKET = env("SUPABASE_INPUT_PDF_BUCKET")
+SUPABASE_OUTPUT_PDF_BUCKET = env("SUPABASE_OUTPUT_PDF_BUCKET")
+
+
 
 __all__ = ("celery_app",)
 
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "aiexaminer-backend.onrender.com",
+    "127.0.0.1",
+    "localhost",
+]
 
 
 # Application definition
@@ -43,6 +61,9 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "django_rest_passwordreset",
+    "dj_database_url",
+    "cloudinary_storage",
+    "cloudinary",   
     # Local
     "auth_app",
     "profile_app",
@@ -108,6 +129,7 @@ DATABASES = {
         "PORT": "5432",
         "OPTIONS": {"client_encoding": "UTF8", "sslmode": "disable"},
     }
+    # "default": dj_database_url.config(default=env("DATABASE_URL"), conn_max_age=600)
 }
 
 
@@ -136,21 +158,26 @@ USE_I18N = True
 USE_TZ = True
 
 
-STATIC_URL = "static/"
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
-# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # For production
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# Media files (User uploaded content)
-MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+
+# Media files
+if DEBUG:
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+else:
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    MEDIA_URL = '/media/' 
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
+    "https://aiexaminer.onrender.com",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:5173",
@@ -188,12 +215,12 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = env('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
 
 AUTH_USER_MODEL = "auth_app.User"
-PASSWORD_RESET_TIMEOUT = 600  # 10 minutes in seconds
+PASSWORD_RESET_TIMEOUT = 600
 
 
 FIREBASE_CREDENTIALS_PATH = BASE_DIR / "credentials" / "firebase-adminsdk.json"

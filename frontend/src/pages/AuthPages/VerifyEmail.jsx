@@ -47,7 +47,7 @@ const VerifyEmail = () => {
       const success = await verifyEmail(email, code);
       if (success) {
         setMessage("Email verified successfully! Redirecting to login...");
-        setTimeout(() => navigate("/login"), 2000);
+        setTimeout(() => navigate("/"), 2000);
       } else {
         setError("Verification failed. Please check your code and try again.");
       }
@@ -355,7 +355,7 @@ const VerifyEmail = () => {
                     <Typography variant="body2" color="text.secondary">
                       Already verified?{" "}
                       <Link
-                        to="/login"
+                        to="/"
                         style={{
                           color: "#005d85",
                           textDecoration: "none",

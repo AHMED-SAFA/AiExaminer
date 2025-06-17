@@ -2,6 +2,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, forwardRef } from "react";
 import axios from "axios";
+import DeleteDialog from "../components/Modals/DeleteDialog";
 import { useNavigate } from "react-router-dom";
 import {
   CardContent,
@@ -39,6 +40,7 @@ import Snackbar from "@mui/material/Snackbar";
 import { useAuth } from "../context/AuthContext";
 import PageTransition from "../components/PageTransition";
 import usePageTitle from "../hooks/usePageTitle";
+import { API_BASE_URL } from "../config/config";
 
 const DeleteModalTransition = forwardRef(function Transition(props, ref) {
   return <Slide direction="down" ref={ref} {...props} />;
@@ -72,7 +74,7 @@ function PreviousExam() {
 
   const fetchUserData = async () => {
     try {
-      const response = await axios.get("http://127.0.0.1:8000/api/auth/user/", {
+      const response = await axios.get(`${API_BASE_URL}/api/auth/user/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -90,7 +92,7 @@ function PreviousExam() {
     try {
       setLoading(true);
       const response = await axios.get(
-        `http://127.0.0.1:8000/api/take-exam/sessions/${userId}/`,
+        `${API_BASE_URL}/api/take-exam/sessions/${userId}/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -134,7 +136,7 @@ function PreviousExam() {
   const handleConfirmDelete = async () => {
     try {
       const response = await axios.delete(
-        `http://127.0.0.1:8000/api/take-exam/delete-session/${selectedSession.id}/`,
+        `${API_BASE_URL}/api/take-exam/delete-session/${selectedSession.id}/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -395,8 +397,8 @@ function PreviousExam() {
                               },
                             }}
                           >
-                            You need to improve your score. Please review the
-                            exam.
+                            Your score is below 40%, you need to improve your
+                            score.
                           </Alert>
                         )}
 
@@ -526,11 +528,11 @@ function PreviousExam() {
                             View Detailed Results
                           </Button>
 
-                          {session.output_pdf && (
+                          {session.output_pdf_url && (
                             <Button
                               variant="outlined"
                               component="a"
-                              href={`http://127.0.0.1:8000/media/${session.output_pdf}`}
+                              href={session.output_pdf_url}
                               target="_blank"
                               rel="noopener noreferrer"
                               startIcon={<VisibilityIcon />}
@@ -559,122 +561,24 @@ function PreviousExam() {
 
             {/* Delete Confirmation Dialog */}
 
-            <Dialog
+            <DeleteDialog
               open={openDialog}
               onClose={handleCloseDialog}
-              aria-labelledby="delete-dialog-title"
-              aria-describedby="delete-dialog-description"
-              TransitionComponent={DeleteModalTransition}
-              keepMounted
-              PaperProps={{
-                sx: {
-                  borderRadius: 2,
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-                  maxWidth: "400px",
-                  width: "100%",
-                  background: "linear-gradient(to bottom, #ffffff, #f8f9fa)",
-                  overflow: "hidden",
-                },
-              }}
-            >
-              <Box
-                sx={{
-                  width: "100%",
-                  height: "8px",
-                  bgcolor: "error.main",
-                }}
-              />
-
-              <DialogTitle
-                id="delete-dialog-title"
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  pb: 1,
-                  pt: 2.5,
-                }}
-              >
-                <Typography variant="h6" fontWeight="600">
-                  Delete Exam Session
-                </Typography>
-              </DialogTitle>
-              <Divider sx={{ width: 1, bgcolor: "divider", mx: "auto" }} />
-
-              <DialogContent sx={{ pt: 1, pb: 2 }}>
-                <DialogContentText
-                  id="delete-dialog-description"
-                  sx={{
-                    color: "text.secondary",
-                    fontSize: "0.95rem",
-                  }}
-                >
-                  Are you sure you want to delete the exam session
-                  <Box
-                    component="span"
-                    sx={{
-                      fontWeight: "bold",
-                      color: "text.primary",
-                      display: "block",
-                      my: 1,
-                      p: 1.5,
-                      bgcolor: "background.paper",
-                      borderRadius: 1,
-                      border: "1px dashed",
-                      borderColor: "divider",
-                      textAlign: "center",
-                    }}
-                  >
-                    "{selectedSession?.exam_title}"
-                  </Box>
-                  This action is permanent and cannot be undone. All related
-                  data including scores and answers will be permanently removed.
-                </DialogContentText>
-              </DialogContent>
-
-              <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
-                <Button
-                  onClick={handleCloseDialog}
-                  variant="outlined"
-                  startIcon={<CancelIcon />}
-                  sx={{
-                    borderRadius: 2,
-                    px: 2.5,
-                    fontWeight: 500,
-                    textTransform: "none",
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleConfirmDelete}
-                  color="error"
-                  variant="contained"
-                  startIcon={<DeleteIcon />}
-                  disableElevation
-                  sx={{
-                    borderRadius: 2,
-                    px: 2.5,
-                    ml: 1.5,
-                    fontWeight: 500,
-                    textTransform: "none",
-                    "&:hover": {
-                      bgcolor: "error.dark",
-                      boxShadow: "0 4px 12px rgba(211, 47, 47, 0.3)",
-                    },
-                  }}
-                >
-                  Delete
-                </Button>
-              </DialogActions>
-            </Dialog>
+              onDelete={handleConfirmDelete}
+              itemToDelete={
+                "Deleting records for: " + selectedSession?.exam_title || "Selected Exam Record"
+              }
+              title={`Delete Exam Record`}
+              description={`Are you sure you want to delete the exam session "${selectedSession?.exam_title}"? This action is permanent and cannot be undone.`}
+              warningText="This action cannot be undone. All related data including scores and answers will be permanently removed."
+            />
 
             {/* Snackbar for notifications */}
             <Snackbar
               open={snackbar.open}
               autoHideDuration={6000}
               onClose={handleCloseSnackbar}
-              anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
             >
               <Alert
                 onClose={handleCloseSnackbar}

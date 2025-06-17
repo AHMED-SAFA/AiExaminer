@@ -1,9 +1,15 @@
 from rest_framework import serializers
 from .models import Exam, Question, Option, ExamSession, UserAnswer
-import filetype 
+import filetype
+from django.conf import settings
+from .supabase_client import SupabaseStorage
+
 
 class ExamCreateSerializer(serializers.ModelSerializer):
     """Serializer for exam creation with validation"""
+
+    # Accept file upload
+    pdf_file = serializers.FileField(write_only=True)
 
     class Meta:
         model = Exam
@@ -11,6 +17,7 @@ class ExamCreateSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "pdf_file",
+            "pdf_file_url",
             "duration",
             "total_marks",
             "each_question_marks",
@@ -18,10 +25,10 @@ class ExamCreateSerializer(serializers.ModelSerializer):
             "minus_marking_value",
             "mcq_options_count",
             "created_at",
-            "output_pdf",
+            "output_pdf_url",
             "question_count",
         ]
-        read_only_fields = ["id", "created_at"]
+        read_only_fields = ["id", "created_at", "pdf_file_url", "output_pdf_url"]
 
     def validate_pdf_file(self, value):
         """Validate PDF file type and size"""
@@ -34,13 +41,13 @@ class ExamCreateSerializer(serializers.ModelSerializer):
         content_type = value.content_type.lower()
 
         # List of allowed extensions and content types
-        allowed_extensions = ['.pdf', '.txt']
+        allowed_extensions = [".pdf", ".txt"]
         allowed_content_types = [
-            'application/pdf',
-            'text/plain',
-            'application/x-pdf',
-            'application/acrobat',
-            'application/vnd.pdf',
+            "application/pdf",
+            "text/plain",
+            "application/x-pdf",
+            "application/acrobat",
+            "application/vnd.pdf",
         ]
 
         # Check file extension
@@ -49,17 +56,19 @@ class ExamCreateSerializer(serializers.ModelSerializer):
 
         # Check content type
         if content_type not in allowed_content_types:
-            raise serializers.ValidationError("Invalid file type. Only PDF and text files are accepted")
+            raise serializers.ValidationError(
+                "Invalid file type. Only PDF and text files are accepted"
+            )
 
         try:
             # For PDF files, verify the file header
-            if file_name.endswith('.pdf'):
+            if file_name.endswith(".pdf"):
                 # Read first few bytes to check PDF signature
                 file_header = value.read(5)
                 value.seek(0)  # Reset file pointer to beginning
-                
+
                 # Check if file starts with PDF signature (%PDF-)
-                if not file_header.startswith(b'%PDF-'):
+                if not file_header.startswith(b"%PDF-"):
                     raise serializers.ValidationError("Invalid PDF file format")
 
         except Exception as e:
@@ -82,6 +91,31 @@ class ExamCreateSerializer(serializers.ModelSerializer):
                 "Exam duration must be between 5 and 180 minutes"
             )
         return value
+
+    def create(self, validated_data):
+        """Create exam and upload PDF to Supabase"""
+        pdf_file = validated_data.pop("pdf_file")
+
+        # Create exam first
+        exam = Exam.objects.create(**validated_data)
+
+        # Upload to Supabase
+        storage = SupabaseStorage()
+        result = storage.upload_file(
+            file=pdf_file, bucket_name=settings.SUPABASE_INPUT_PDF_BUCKET
+        )
+
+        if result:
+            exam.pdf_file_url = result["url"]
+            exam.pdf_file_path = result["path"]
+            exam.pdf_file_name = pdf_file.name
+            exam.save()
+        else:
+            # If upload fails, delete the created exam
+            exam.delete()
+            raise serializers.ValidationError("Failed to upload PDF to storage")
+
+        return exam
 
 
 class OptionSerializer(serializers.ModelSerializer):
@@ -130,7 +164,8 @@ class ExamDetailSerializer(serializers.ModelSerializer):
             "processing_status",
             "questions",
             "question_count",
-            "output_pdf",
+            "output_pdf_url",
+            "pdf_file_url",
         ]
 
     def get_question_count(self, obj):

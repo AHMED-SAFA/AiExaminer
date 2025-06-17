@@ -4,6 +4,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  CircularProgress,
   Stepper,
   Step,
   StepLabel,
@@ -23,6 +24,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 
 const CreateExamModal = ({ open, handleClose, handleSubmit }) => {
   const [activeStep, setActiveStep] = useState(0);
+  const [loading, setLoading] = useState(false);
   const steps = ["Exam Details", "Time Settings", "Scoring Options"];
   const [examData, setExamData] = useState({
     title: "",
@@ -58,18 +60,25 @@ const CreateExamModal = ({ open, handleClose, handleSubmit }) => {
   };
 
   const handleFormSubmit = async () => {
-    const formData = new FormData();
-    formData.append("title", examData.title);
-    formData.append("pdf_file", examData.pdfFile);
-    formData.append("duration", examData.duration);
-    formData.append("total_marks", examData.totalMarks);
-    formData.append("each_question_marks", examData.each_question_marks);
-    formData.append("minus_marking", examData.minusMarking);
-    formData.append("minus_marking_value", examData.minusMarkingValue);
-    formData.append("mcq_options_count", examData.minmcqOptionsCount);
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("title", examData.title);
+      formData.append("pdf_file", examData.pdfFile);
+      formData.append("duration", examData.duration);
+      formData.append("total_marks", examData.totalMarks);
+      formData.append("each_question_marks", examData.each_question_marks);
+      formData.append("minus_marking", examData.minusMarking);
+      formData.append("minus_marking_value", examData.minusMarkingValue);
+      formData.append("mcq_options_count", examData.minmcqOptionsCount);
 
-    await handleSubmit(formData);
-    clearModel();
+      await handleSubmit(formData);
+      clearModel();
+    } catch (error) {
+      console.error("Form submission error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const clearModel = () => {
@@ -250,9 +259,26 @@ const CreateExamModal = ({ open, handleClose, handleSubmit }) => {
           <Button
             onClick={handleFormSubmit}
             variant="contained"
-            disabled={!isStepValid()}
+            disabled={(!isStepValid(), loading)}
+            sx={{
+              mt: 3,
+              mb: 2,
+              height: 48,
+              position: "relative",
+            }}
           >
-            Create Exam
+            {loading ? (
+              <CircularProgress
+                size={24}
+                sx={{
+                  color: "white",
+                }}
+              >
+                Creating Exam
+              </CircularProgress>
+            ) : (
+              "Create Exam"
+            )}
           </Button>
         )}
       </DialogActions>

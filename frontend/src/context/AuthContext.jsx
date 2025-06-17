@@ -4,6 +4,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../config/config";
 import { jwtDecode } from "jwt-decode";
 import { getAuth, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "../utils/firebase";
@@ -24,10 +25,10 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post(
-        "http://127.0.0.1:8000/api/auth/login/",
-        { email, password }
-      );
+      const response = await axios.post(`${API_BASE_URL}/api/auth/login/`, {
+        email,
+        password,
+      });
 
       const { access, refresh, user: userData } = response.data;
 
@@ -41,16 +42,17 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("refreshToken", refresh);
       setToken(access);
 
-      // Store the complete user object from the response, including image URL
-      setUser(userData || decoded);
+      // Store the user data, ensuring image is handled properly
+      setUser({
+        ...userData,
+        image: userData.image || null, // Handle case where image might be null
+      });
 
       console.log("Login response:", response);
       return { success: true };
     } catch (error) {
       console.error("Login error:", error);
-      console.log("Login error:", error);
 
-      // Clear any partial authentication if verification failed
       if (error.message.includes("verified")) {
         localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");
@@ -94,7 +96,7 @@ export const AuthProvider = ({ children }) => {
 
       // Send the token and user details to your backend
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/auth/firebase-login/",
+        `${API_BASE_URL}/api/auth/firebase-login/`,
         {
           idToken,
           photoURL,
@@ -126,7 +128,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUserData = async () => {
     try {
-      const response = await axios.get("http://127.0.0.1:8000/api/auth/user/", {
+      const response = await axios.get(`${API_BASE_URL}/api/auth/user/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -145,7 +147,7 @@ export const AuthProvider = ({ children }) => {
       // Attempt to logout with the backend
       try {
         await axios.post(
-          "http://localhost:8000/api/auth/logout/",
+          `${API_BASE_URL}/api/auth/logout/`,
           { refresh_token: refreshToken },
           {
             headers: {
@@ -157,7 +159,7 @@ export const AuthProvider = ({ children }) => {
       } catch (error) {
         if (error.response?.data?.code === "token_not_valid") {
           await axios.post(
-            "http://localhost:8000/api/auth/logout/",
+            `${API_BASE_URL}/api/auth/logout/`,
             { refresh_token: refreshToken },
             {
               headers: {
@@ -208,7 +210,7 @@ export const AuthProvider = ({ children }) => {
       };
 
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/auth/register/",
+        `${API_BASE_URL}/api/auth/register/`,
         formData,
         config
       );
@@ -225,7 +227,7 @@ export const AuthProvider = ({ children }) => {
   const verifyEmail = async (email, code) => {
     try {
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/auth/verify-email/",
+        `${API_BASE_URL}/api/auth/verify-email/`,
         { email, code }
       );
       console.log("Email verification response:", response);
@@ -240,7 +242,7 @@ export const AuthProvider = ({ children }) => {
   const requestPasswordReset = async (email) => {
     try {
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/auth/request-reset-email/",
+        `${API_BASE_URL}/api/auth/request-reset-email/`,
         {
           email,
         }
@@ -257,7 +259,7 @@ export const AuthProvider = ({ children }) => {
   const resetPassword = async (uidb64, token, password, password2) => {
     try {
       const response = await axios.patch(
-        "http://127.0.0.1:8000/api/auth/password-reset-complete/",
+        `${API_BASE_URL}/api/auth/password-reset-complete/`,
         {
           uidb64,
           token,
@@ -284,7 +286,7 @@ export const AuthProvider = ({ children }) => {
           try {
             const refreshToken = localStorage.getItem("refreshToken");
             const response = await axios.post(
-              "http://127.0.0.1:8000/api/token/refresh/",
+              `${API_BASE_URL}/api/token/refresh/`,
               {
                 refresh: refreshToken,
               }
@@ -308,7 +310,7 @@ export const AuthProvider = ({ children }) => {
           if (!user) {
             try {
               const response = await axios.get(
-                "http://127.0.0.1:8000/api/auth/profile/",
+                `${API_BASE_URL}/api/auth/profile/`,
                 {
                   headers: {
                     Authorization: `Bearer ${token}`,

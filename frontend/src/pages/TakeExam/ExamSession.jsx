@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { API_BASE_URL } from "../../config/config";
 import {
   Box,
   Typography,
@@ -32,7 +33,7 @@ import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 const ExamSession = () => {
-  usePageTitle('Exam');
+  usePageTitle("Exam");
   const { examId } = useParams();
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -130,7 +131,7 @@ const ExamSession = () => {
 
         // 1. Fetch exam details
         const examResponse = await axios.get(
-          `http://127.0.0.1:8000/api/take-exam/${examId}/`,
+          `${API_BASE_URL}/api/take-exam/${examId}/`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -143,7 +144,7 @@ const ExamSession = () => {
         // 2. Start new exam session
         setLoadingMessage("Starting exam session...");
         const sessionResponse = await axios.post(
-          "http://127.0.0.1:8000/api/take-exam/start-session/",
+          `${API_BASE_URL}/api/take-exam/start-session/`,
           { exam: examId },
           {
             headers: {
@@ -157,7 +158,7 @@ const ExamSession = () => {
         // 3. Fetch questions and options
         setLoadingMessage("Loading questions...");
         const questionsResponse = await axios.get(
-          `http://127.0.0.1:8000/api/take-exam/${examId}/questions/`,
+          `${API_BASE_URL}/api/take-exam/${examId}/questions/`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -275,7 +276,7 @@ const ExamSession = () => {
 
       // Submit answer to backend
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/take-exam/submit-answer/",
+        `${API_BASE_URL}/api/take-exam/submit-answer/`,
         {
           session: examSession.id,
           question: questionId,
@@ -316,7 +317,7 @@ const ExamSession = () => {
 
       // Submit null to backend
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/take-exam/submit-answer/",
+        `${API_BASE_URL}/api/take-exam/submit-answer/`,
         {
           session: examSession.id,
           question: questionId,
@@ -358,7 +359,7 @@ const ExamSession = () => {
 
       // Complete the exam session
       const response = await axios.put(
-        `http://127.0.0.1:8000/api/take-exam/complete-session/${examSession.id}/`,
+        `${API_BASE_URL}/api/take-exam/complete-session/${examSession.id}/`,
         {},
         {
           headers: {

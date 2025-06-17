@@ -7,15 +7,13 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 import string
 import random
+import cloudinary.uploader
 
 User = get_user_model()
 
-# Initialize Firebase Admin SDK (you need to configure this with your Firebase credentials)
-# Make sure this is only initialized once
 try:
     firebase_app = firebase_admin.get_app()
 except ValueError:
-    # Use your own Firebase credentials file path
     cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
     firebase_app = firebase_admin.initialize_app(cred)
 
@@ -57,14 +55,14 @@ def get_or_create_user_from_firebase(firebase_user):
             username = f"{base_username}{counter}"
             counter += 1
         
-        # Generate a random password - the user will login via Firebase, not with this password
+        # Generate a random password
         random_password = generate_random_password()
         
         # Create the user
         user = User.objects.create_user(
             username=username,
             email=email,
-            password=random_password,  # Using our custom random password generator
+            password=random_password,
             is_verified=firebase_user.get('email_verified', True)
         )
         
@@ -91,6 +89,29 @@ class TimeLimitedPasswordResetTokenGenerator(PasswordResetTokenGenerator):
         return timezone.now().timestamp() <= expiration_time
 
 password_reset_token = TimeLimitedPasswordResetTokenGenerator()
+
+def upload_to_cloudinary(image_file, public_id=None):
+    """Upload image to Cloudinary and return the URL"""
+    try:
+        if public_id:
+            # Delete existing image if updating
+            try:
+                cloudinary.uploader.destroy(public_id)
+            except:
+                pass
+        
+        # Upload new image
+        upload_result = cloudinary.uploader.upload(
+            image_file,
+            folder="profile_images",  # Store in a specific folder
+            public_id=public_id,
+            overwrite=True,
+            resource_type="auto"
+        )
+        return upload_result.get('secure_url'), upload_result.get('public_id')
+    except Exception as e:
+        print(f"Cloudinary upload error: {str(e)}")
+        return None, None
 
 
 

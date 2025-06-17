@@ -18,6 +18,7 @@ import {
   Stack,
 } from "@mui/material";
 import { useEffect, useState } from "react";
+import { API_BASE_URL } from "../config/config";
 import axios from "axios";
 import EditIcon from "@mui/icons-material/Edit";
 import VerifiedIcon from "@mui/icons-material/Verified";
@@ -82,7 +83,7 @@ function Profile() {
   const fetchUserData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get("http://127.0.0.1:8000/api/auth/user/", {
+      const response = await axios.get(`${API_BASE_URL}/api/auth/user/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -133,7 +134,7 @@ function Profile() {
       }
 
       const response = await axios.patch(
-        "http://127.0.0.1:8000/api/profile/update-profile/",
+        `${API_BASE_URL}/api/profile/update-profile/`,
         formDataToSend,
         {
           headers: {

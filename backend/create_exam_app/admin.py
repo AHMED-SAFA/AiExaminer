@@ -50,16 +50,27 @@ class ExamAdmin(admin.ModelAdmin):
         "total_marks",
         "each_question_marks",
         "created_at",
-        "processing_status",
         "is_processed",
-        "output_pdf",
-        "question_count",
+        "processing_status",
+        "output_pdf_url",
     )
-    list_filter = ("is_processed", "processing_status", "created_at", "minus_marking")
+    list_filter = ("created_at", "is_processed", "processing_status")
     search_fields = ("title", "created_by__username")
     readonly_fields = ("pdf_preview", "processing_status", "is_processed")
     fieldsets = (
-        (None, {"fields": ("title", "created_by", "pdf_file", "pdf_preview")}),
+        (
+            None,
+            {
+                "fields": (
+                    "title",
+                    "created_by",
+                    "pdf_file_url",
+                    "pdf_file_path",
+                    "pdf_file_name",
+                    "pdf_preview",
+                )
+            },
+        ),
         (
             "Configuration",
             {
@@ -70,7 +81,9 @@ class ExamAdmin(admin.ModelAdmin):
                     "minus_marking",
                     "minus_marking_value",
                     "mcq_options_count",
-                    "output_pdf",
+                    "output_pdf_url",
+                    "output_pdf_path",
+                    "output_pdf_name",
                     "question_count",
                 )
             },
@@ -90,9 +103,9 @@ class ExamAdmin(admin.ModelAdmin):
     creator_with_link.short_description = "Created By"
 
     def pdf_preview(self, obj):
-        if obj.pdf_file:
+        if obj.pdf_file_url:
             return format_html(
-                '<a href="{}" target="_blank">View PDF</a>', obj.pdf_file.url
+                '<a href="{}" target="_blank">View PDF</a>', obj.pdf_file_url
             )
         return "-"
 
@@ -116,13 +129,12 @@ class ExamSessionAdmin(admin.ModelAdmin):
         "exam",
         "user",
         "start_time",
-        "duration",
+        "end_time",
         "is_completed",
         "score",
-        "unanswered",
     )
-    list_filter = ("exam", "is_completed", "start_time")
-    search_fields = ("user__username", "exam__title")
+    list_filter = ("start_time", "is_completed")
+    search_fields = ("exam__title", "user__username")
     readonly_fields = ("duration",)
     inlines = [UserAnswerInline]
     list_per_page = 20
@@ -141,18 +153,13 @@ class ExamSessionAdmin(admin.ModelAdmin):
 class UserAnswerAdmin(admin.ModelAdmin):
     list_display = (
         "id",
-        "session_info",
-        "short_question",
-        "selected_option_text",
-        "status_display",
+        "session",
+        "question",
+        "selected_option",
         "is_correct",
-    )
-    list_filter = (
         "status",
-        "is_correct",
-        "session__exam",
-        "session__user",
     )
+    list_filter = ("is_correct", "status")
     search_fields = (
         "session__user__username",
         "question__question_text",

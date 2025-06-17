@@ -5,7 +5,7 @@ from create_exam_app.models import ExamSession
 class ExamSessionDetailSerializer(serializers.ModelSerializer):
     """Serializer for exam session with exam details"""
     exam_title = serializers.CharField(source='exam.title', read_only=True)
-    output_pdf = serializers.CharField(source='exam.output_pdf', read_only=True)
+    output_pdf_url = serializers.CharField(source='exam.output_pdf_url', read_only=True)
     minus_marking_value = serializers.CharField(source='exam.minus_marking_value', read_only=True)
     each_question_marks = serializers.CharField(source='exam.each_question_marks', read_only=True)
     total_marks = serializers.FloatField(source='exam.total_marks', read_only=True)
@@ -20,7 +20,7 @@ class ExamSessionDetailSerializer(serializers.ModelSerializer):
             "start_time",
             "each_question_marks",
             "minus_marking_value",
-            "output_pdf",
+            "output_pdf_url",
             'total_marks',
             'duration',
             "unanswered",

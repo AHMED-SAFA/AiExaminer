@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../config/config";
 import {
   PieChart,
   Pie,
@@ -113,7 +114,7 @@ function StatisticsPage() {
     setLoading(true);
     try {
       const response = await axios.get(
-        "http://127.0.0.1:8000/api/exam-statistics/statistics/",
+        `${API_BASE_URL}/api/exam-statistics/statistics/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -143,7 +144,7 @@ function StatisticsPage() {
     try {
       // Fetch detailed statistics for the selected exam
       const response = await axios.get(
-        `http://127.0.0.1:8000/api/exam-statistics/${examId}/statistics/`,
+        `${API_BASE_URL}/api/exam-statistics/${examId}/statistics/`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -328,7 +329,7 @@ function StatisticsPage() {
 
     try {
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/exam-statistics/generate-suggestions/",
+        `${API_BASE_URL}/api/exam-statistics/generate-suggestions/`,
         {
           examId: selectedExam,
           stats: examStatistics,

@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
+import { API_BASE_URL } from '../../config/config';
 import {
   TextField,
   Button,
@@ -63,7 +64,7 @@ const ResetPassword = () => {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          `http://localhost:8000/api/auth/reset-password/${uidb64}/${token}/`
+          `${API_BASE_URL}/api/auth/reset-password/${uidb64}/${token}/`
         );
 
         if (response.data.success) {
@@ -100,7 +101,7 @@ const ResetPassword = () => {
     try {
       setIsLoading(true);
       const response = await axios.patch(
-        "http://localhost:8000/api/auth/password-reset-complete/",
+        `${API_BASE_URL}/api/auth/password-reset-complete/`,
         {
           uidb64,
           token,
@@ -111,7 +112,7 @@ const ResetPassword = () => {
 
       if (response.data.success) {
         setMessage("Password reset successfully! Redirecting to login...");
-        setTimeout(() => navigate("/login"), 3000);
+        setTimeout(() => navigate("/"), 3000);
       } else {
         setError(
           response.data.error || "Password reset failed. Please try again."
@@ -323,7 +324,7 @@ const ResetPassword = () => {
                   <Button
                     fullWidth
                     variant="contained"
-                    onClick={() => navigate("/login")}
+                    onClick={() => navigate("/")}
                     sx={{
                       py: 1.8,
                       borderRadius: 3,
@@ -681,7 +682,7 @@ const ResetPassword = () => {
                     <Typography variant="body2" color="text.secondary">
                       Remember your password?{" "}
                       <Link
-                        to="/login"
+                        to="/"
                         style={{
                           color: "#005d85",
                           textDecoration: "none",

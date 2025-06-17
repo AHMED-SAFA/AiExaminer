@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
+import { API_BASE_URL } from "../config/config";
 
 import {
   Bars3Icon,
@@ -27,7 +28,7 @@ export default function Navbar() {
 
   const fetchUserData = async () => {
     try {
-      const response = await axios.get("http://127.0.0.1:8000/api/auth/user/", {
+      const response = await axios.get(`${API_BASE_URL}/api/auth/user/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

@@ -8,6 +8,7 @@ from .utils import (
     password_reset_token,
     verify_firebase_token,
     get_or_create_user_from_firebase,
+    upload_to_cloudinary,
 )
 from django.contrib.auth import get_user_model
 from .serializers import (
@@ -38,9 +39,9 @@ from .models import VerificationCode
 from rest_framework import generics, status
 from django.core.mail import EmailMultiAlternatives
 from django.utils.html import strip_tags
+from django.core.files.base import ContentFile
 import requests
 from io import BytesIO
-from django.core.files.images import ImageFile
 
 User = get_user_model()
 
@@ -52,7 +53,19 @@ class RegisterView(generics.GenericAPIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
+
+        # Create user without saving yet
         user = serializer.save()
+
+        # Handle image upload to Cloudinary
+        if "image" in request.FILES:
+            image_url, public_id = upload_to_cloudinary(request.FILES["image"])
+            if image_url and public_id:
+                user.image = image_url
+                user.image_public_id = public_id
+
+        # Save the user
+        user.save()
 
         # Generate and send verification code
         verification_code = VerificationCode.generate_code(user)
@@ -65,11 +78,8 @@ class RegisterView(generics.GenericAPIView):
         }
 
         html_content = render_to_string("email/email_verification.html", context)
-        text_content = strip_tags(
-            html_content
-        )  # Plain text version for clients that don't support HTML
+        text_content = strip_tags(html_content)
 
-        # Send email with both HTML and plain text
         email = EmailMultiAlternatives(
             subject="Verify your email address",
             body=text_content,
@@ -91,8 +101,10 @@ class VerifyEmail(generics.GenericAPIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         user = serializer.validated_data["user"]
+
+        image_url = user.image if user.image else None
+
         user.is_verified = True
         user.save()
 
@@ -113,15 +125,32 @@ class VerifyEmail(generics.GenericAPIView):
                     "id": user.id,
                     "email": user.email,
                     "username": user.username,
-                    "image": (
-                        request.build_absolute_uri(user.image.url)
-                        if user.image
-                        else None
-                    ),
+                    "image": image_url,
+                    "is_verified": user.is_verified,
                 },
             },
             status=status.HTTP_200_OK,
         )
+
+
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+
+        if response.status_code == 200:
+            user = self.user
+            # Access image directly since it's a URLField
+            image_url = user.image if user.image else None
+
+            response.data["user"].update(
+                {
+                    "image": image_url  # Use the URL directly
+                }
+            )
+
+        return response
 
 
 class LoginAPIView(TokenObtainPairView):
@@ -131,10 +160,8 @@ class LoginAPIView(TokenObtainPairView):
         try:
             user = User.objects.get(email=request.data.get("email", ""))
             if not user.is_verified:
-                # Generate a new verification code for convenience
                 verification_code = VerificationCode.generate_code(user)
 
-                # Create HTML email
                 context = {
                     "username": user.username,
                     "verification_code": verification_code.code,
@@ -171,12 +198,7 @@ class LoginAPIView(TokenObtainPairView):
         if response.status_code == status.HTTP_200_OK and "user" in response.data:
             user_id = response.data["user"]["id"]
             user = User.objects.get(id=user_id)
-            if user.image:
-                response.data["user"]["image"] = request.build_absolute_uri(
-                    user.image.url
-                )
-            else:
-                response.data["user"]["image"] = None
+            response.data["user"]["image"] = user.image if user.image else None
 
         return response
 
@@ -343,82 +365,58 @@ class PasswordTokenCheckAPI(generics.GenericAPIView):
 
 class FirebaseLoginView(APIView):
     def post(self, request):
-        id_token = request.data.get("idToken")
-
-        # Get additional data sent from frontend
-        photo_url = request.data.get("photoURL")
-        display_name = request.data.get("displayName")
-        email = request.data.get("email")
-
-        if not id_token:
-            return Response(
-                {"error": "Firebase ID token is required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         try:
-            # Verify the Firebase token
-            firebase_user = verify_firebase_token(id_token)
+            firebase_token = request.data.get("idToken")
+            if not firebase_token:
+                return Response(
+                    {"error": "Firebase token is required"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-            # Add or override values from request data
-            if photo_url:
-                firebase_user["photoURL"] = photo_url
-            if display_name:
-                firebase_user["displayName"] = display_name
-            if email:
-                firebase_user["email"] = email
+            # Verify firebase token
+            decoded_token = verify_firebase_token(firebase_token)
 
-            # Get or create user from Firebase data
-            user = get_or_create_user_from_firebase(firebase_user)
+            # Get or create user
+            user = get_or_create_user_from_firebase(decoded_token)
 
-            # Always update the profile image when available
-            if "photoURL" in firebase_user and firebase_user["photoURL"]:
+            # If user doesn't have an image and photoURL is provided in the token
+            if not user.image and decoded_token.get("picture"):
                 try:
-                    # Download image from Firebase
-                    response = requests.get(firebase_user["photoURL"])
+                    # Download the image from Google
+                    response = requests.get(decoded_token.get("picture"))
                     if response.status_code == 200:
-                        # Create an image file
+                        # Create a file-like object from the image data
                         img_temp = BytesIO(response.content)
-                        img_name = f"firebase_profile_{user.id}.jpg"
-                        # Always update the image even if one already exists
-                        user.image.save(img_name, ImageFile(img_temp), save=True)
-                        print(f"Successfully saved profile image for user {user.id}")
+
+                        # Upload to Cloudinary
+                        image_url, public_id = upload_to_cloudinary(img_temp)
+                        if image_url and public_id:
+                            user.image = image_url
+                            user.image_public_id = public_id
+                            user.save()
                 except Exception as e:
-                    print(f"Error downloading Firebase profile image: {str(e)}")
+                    print(f"Error saving profile image: {str(e)}")
 
-            # Generate JWT tokens
+            # Generate tokens
             refresh = RefreshToken.for_user(user)
-            access_token = str(refresh.access_token)
-
-            # Add custom claims
-            refresh["username"] = user.username
-            refresh["email"] = user.email
-            refresh["is_verified"] = user.is_verified
-
-            user_data = {
-                "id": user.id,
-                "email": user.email,
-                "username": user.username,
-                "is_verified": user.is_verified,
-            }
-
-            # Add image URL if available
-            if user.image:
-                user_data["image"] = request.build_absolute_uri(user.image.url)
-            else:
-                user_data["image"] = None
 
             return Response(
                 {
-                    "access": access_token,
+                    "access": str(refresh.access_token),
                     "refresh": str(refresh),
-                    "user": user_data,
-                },
-                status=status.HTTP_200_OK,
+                    "user": {
+                        "id": user.id,
+                        "email": user.email,
+                        "username": user.username,
+                        "is_verified": user.is_verified,
+                        "image": user.image,
+                    },
+                }
             )
 
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class UserProfileView(APIView):
     permission_classes = (IsAuthenticated,)
@@ -428,10 +426,60 @@ class UserProfileView(APIView):
         serializer = UserSerializer(request.user)
         data = serializer.data
 
-        # Add full URL for image
-        if request.user.image:
-            data["image"] = request.build_absolute_uri(request.user.image.url)
-
+        # Since image is already a full URL from Cloudinary, we don't need to modify it
+        # Just return the serialized data as is
         return Response(data, status=status.HTTP_200_OK)
 
-    
+
+class LoginView(APIView):
+    def post(self, request):
+        try:
+            email = request.data.get("email")
+            password = request.data.get("password")
+
+            user = authenticate(request, email=email, password=password)
+
+            if user is not None:
+                if not user.is_verified:
+                    return Response(
+                        {
+                            "error": "Email not verified. Please verify your email first."
+                        },
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+
+                refresh = RefreshToken.for_user(user)
+                access_token = str(refresh.access_token)
+
+                # Handle the user image URL properly
+                image_url = (
+                    user.image.url if hasattr(user, "image") and user.image else None
+                )
+
+                response_data = {
+                    "success": True,
+                    "access": str(access_token),
+                    "refresh": str(refresh),
+                    "user": {
+                        "id": user.id,
+                        "email": user.email,
+                        "first_name": user.first_name,
+                        "last_name": user.last_name,
+                        "image": image_url,
+                        "is_verified": user.is_verified,
+                        "is_staff": user.is_staff,
+                        "is_superuser": user.is_superuser,
+                    },
+                }
+
+                return Response(response_data, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {"error": "Invalid email or password"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+        except Exception as e:
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

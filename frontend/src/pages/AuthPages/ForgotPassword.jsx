@@ -17,7 +17,6 @@ import {
   OutlinedInput,
 } from "@mui/material";
 import { LockReset, Email, ArrowBack } from "@mui/icons-material";
-import { motion } from "framer-motion";
 import usePageTitle from "../../hooks/usePageTitle";
 
 const ForgotPassword = () => {
@@ -42,7 +41,7 @@ const ForgotPassword = () => {
           "If an account with that email exists, we have sent a password reset link."
         );
         setTimeout(() => {
-          navigate("/login");
+          navigate("/");
         }, 3000); // Navigate after showing success message for 3 seconds
       }
     } catch (error) {
@@ -316,7 +315,7 @@ const ForgotPassword = () => {
                   <Button
                     fullWidth
                     variant="outlined"
-                    onClick={() => navigate("/login")}
+                    onClick={() => navigate("/")}
                     startIcon={<ArrowBack />}
                     sx={{
                       mt: 2,
@@ -342,7 +341,7 @@ const ForgotPassword = () => {
                     <Typography variant="body2" color="text.secondary">
                       Remember your password?{" "}
                       <Link
-                        to="/login"
+                        to="/"
                         style={{
                           color: "#005d85",
                           textDecoration: "none",

@@ -25,7 +25,6 @@ import {
   VisibilityOff,
   PersonAddAlt,
 } from "@mui/icons-material";
-import { motion } from "framer-motion";
 import usePageTitle from "../../hooks/usePageTitle";
 
 const Register = () => {
