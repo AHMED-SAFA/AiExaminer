@@ -56,7 +56,6 @@ function ExamReview() {
           },
         }
       );
-      console.log("Exam session details:", response.data);
       setSessionData(response.data);
       setError(null);
     } catch (err) {

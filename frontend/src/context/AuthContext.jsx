@@ -48,7 +48,6 @@ export const AuthProvider = ({ children }) => {
         image: userData.image || null, // Handle case where image might be null
       });
 
-      console.log("Login response:", response);
       return { success: true };
     } catch (error) {
       console.error("Login error:", error);
@@ -88,11 +87,7 @@ export const AuthProvider = ({ children }) => {
       const displayName = result.user.displayName;
       const email = result.user.email;
 
-      console.log("Google user details:", {
-        photoURL,
-        displayName,
-        email,
-      });
+     
 
       // Send the token and user details to your backend
       const response = await axios.post(
@@ -112,7 +107,6 @@ export const AuthProvider = ({ children }) => {
       setToken(access);
       setUser(userData);
 
-      console.log("Google login response:", response.data);
       return { success: true };
     } catch (error) {
       console.error("Google login error:", error);
@@ -133,7 +127,6 @@ export const AuthProvider = ({ children }) => {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log("Fetched userData from home:", response.data);
       setUserData(response.data);
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -215,10 +208,8 @@ export const AuthProvider = ({ children }) => {
         config
       );
 
-      console.log("Registration response:", response);
       return { success: true, data: response.data };
     } catch (error) {
-      console.log("Registration error:", error);
       console.error("Registration error:", error);
       return { success: false, error: error.response?.data };
     }
@@ -230,11 +221,9 @@ export const AuthProvider = ({ children }) => {
         `${API_BASE_URL}/api/auth/verify-email/`,
         { email, code }
       );
-      console.log("Email verification response:", response);
       return true;
     } catch (error) {
       console.error("Email verification error:", error);
-      console.log("Email verification error:", error);
       return false;
     }
   };
@@ -247,11 +236,9 @@ export const AuthProvider = ({ children }) => {
           email,
         }
       );
-      console.log("Password reset request response:", response);
       return true;
     } catch (error) {
       console.error("Password reset request error:", error);
-      console.log("Password reset request error:", error);
       return false;
     }
   };
@@ -267,11 +254,9 @@ export const AuthProvider = ({ children }) => {
           password2,
         }
       );
-      console.log("Password reset response:", response);
       return true;
     } catch (error) {
       console.error("Password reset error:", error);
-      console.log("Password reset error:", error);
       return false;
     }
   };

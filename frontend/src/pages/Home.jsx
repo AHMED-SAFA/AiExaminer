@@ -74,8 +74,6 @@ const Home = () => {
   });
 
   useEffect(() => {
-    console.log("user from auth context:", user);
-    console.log("userData is from auth context:", userData);
     fetchExams();
   }, []);
 
@@ -116,7 +114,6 @@ const Home = () => {
         },
       });
       setExams(response.data);
-      console.log("Fetched exams from home:", response.data);
     } catch (error) {
       console.error("Error fetching exams:", error);
       setSnackbar({
@@ -141,7 +138,6 @@ const Home = () => {
           },
         }
       );
-      console.log("Exam created:", response.data);
       handleModalClose();
       setSnackbar({
         open: true,
@@ -178,7 +174,6 @@ const Home = () => {
           },
         }
       );
-      console.log("Exam deleted:", response.data);
       setSnackbar({
         open: true,
         message: "Exam deleted successfully!",
@@ -203,7 +198,6 @@ const Home = () => {
 
   const handleGenerateOptions = async (examId) => {
     setGeneratingOptions((prev) => ({ ...prev, [examId]: true }));
-    console.log("Generating options for exam ID:", examId);
 
     try {
       const response = await axios.post(
@@ -215,7 +209,6 @@ const Home = () => {
           },
         }
       );
-      console.log("Options generated:", response);
       setSnackbar({
         open: true,
         message: "Successfully generated options and answers!",
@@ -224,7 +217,6 @@ const Home = () => {
       await fetchExams();
     } catch (error) {
       console.error("Error generating options:", error);
-      console.log("Error generating options:", error);
       let errorMessage =
         "Failed to generate options and answers. Please try again.";
 
@@ -292,9 +284,7 @@ const Home = () => {
       examId,
       extractedExamId,
     });
-    console.log("Exam ID from handleExamClick:", examId);
-    console.log("Extracted Exam ID from handleExamClick:", extractedExamId);
-  };
+     };
 
   const handleStartExam = () => {
     const { examId, extractedExamId } = examStartDialog;

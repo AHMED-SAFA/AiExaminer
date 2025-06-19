@@ -1,0 +1,21 @@
+@keyframes colorBlink {
+  0% {
+    color: rgb(246, 133, 246);
+  }
+  25% {
+    color: #60a5fa;
+  } /* blue-400 */
+  50% {
+    color: #34d399;
+  } /* emerald-400 */
+  75% {
+    color: #f87171;
+  } /* red-400 */
+  100% {
+    color: rgb(246, 133, 246);
+  }
+}
+
+.animate-colorBlink {
+  animation: colorBlink 4s infinite;
+}

@@ -79,7 +79,6 @@ function PreviousExam() {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log("Fetched userData from home:", response.data);
       setUserData(response.data);
       setUserId(response.data.id);
     } catch (error) {
@@ -99,13 +98,11 @@ function PreviousExam() {
           },
         }
       );
-      console.log("response from previous exam sessions:", response.data);
       setExamSessions(response.data);
       setError(null);
     } catch (err) {
       setError("Failed to fetch exam sessions. Please try again later.");
       console.error("Error fetching exam sessions:", err);
-      console.log("Error fetching exam sessions:", err);
     } finally {
       setLoading(false);
     }
@@ -123,7 +120,6 @@ function PreviousExam() {
   };
 
   const handleDeleteClick = (session) => {
-    console.log("Delete button clicked for session:", session);
     setSelectedSession(session);
     setOpenDialog(true);
   };
@@ -143,7 +139,6 @@ function PreviousExam() {
           },
         }
       );
-      console.log("response from delete exam session:", response.data);
 
       setExamSessions((prevSessions) =>
         prevSessions.filter((session) => session.id !== selectedSession.id)

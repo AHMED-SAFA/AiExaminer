@@ -16,6 +16,7 @@ import {
   InputLabel,
   OutlinedInput,
 } from "@mui/material";
+import { motion } from "framer-motion";
 import { LockReset, Email, ArrowBack } from "@mui/icons-material";
 import usePageTitle from "../../hooks/usePageTitle";
 

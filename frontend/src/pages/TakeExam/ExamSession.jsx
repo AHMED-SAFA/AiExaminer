@@ -83,8 +83,6 @@ const ExamSession = () => {
 
   // Initialize exam session
   useEffect(() => {
-    console.log("Exam ID from URL:", examId);
-    console.log("Token from context:", token);
 
     const startExam = async () => {
       try {
@@ -94,7 +92,6 @@ const ExamSession = () => {
 
         if (savedSession && !savedSession.examComplete) {
           setLoadingMessage("Resuming previous session...");
-          console.log("Resuming session from localStorage:", savedSession);
 
           // Restore state from saved session
           setExam(savedSession.exam);
@@ -138,7 +135,6 @@ const ExamSession = () => {
             },
           }
         );
-        console.log("Exam details from start exam:", examResponse.data);
         setExam(examResponse.data);
 
         // 2. Start new exam session
@@ -152,7 +148,6 @@ const ExamSession = () => {
             },
           }
         );
-        console.log("Session response from start exam:", sessionResponse.data);
         setExamSession(sessionResponse.data);
 
         // 3. Fetch questions and options
@@ -164,10 +159,6 @@ const ExamSession = () => {
               Authorization: `Bearer ${token}`,
             },
           }
-        );
-        console.log(
-          "Questions response from start exam:",
-          questionsResponse.data
         );
         setQuestions(questionsResponse.data);
 
@@ -288,10 +279,7 @@ const ExamSession = () => {
           },
         }
       );
-      console.log(
-        "Answer submission response from handleAnswer:",
-        response.data
-      );
+      
     } catch (error) {
       console.error("Error submitting answer:", error);
       console.log("Error submitting answer from handleAnswer:", error);
@@ -329,7 +317,6 @@ const ExamSession = () => {
           },
         }
       );
-      console.log("Answer cleared response:", response.data);
     } catch (error) {
       console.error("Error clearing answer:", error);
       setSnackbar({
@@ -367,7 +354,6 @@ const ExamSession = () => {
           },
         }
       );
-      console.log("Results from handleExamSubmit:", response.data);
 
       setResults(response.data);
       setExamComplete(true);

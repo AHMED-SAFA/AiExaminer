@@ -15,6 +15,7 @@ import PreviousExam from "./pages/PreviousExam";
 import ExamReview from "./pages/ExamReview";
 import StatisticsPage from "./pages/StatisticsPage";
 import TokenProtectedRoutes from "./components/AuthComponents/TokenProtectedRoutes";
+import Tutorial from "./pages/Tutorial";
 
 function App() {
   const LayoutWithNavbar = ({ children }) => (
@@ -92,6 +93,16 @@ function App() {
               <TokenProtectedRoutes>
                 <LayoutWithNavbar>
                   <Home />
+                </LayoutWithNavbar>
+              </TokenProtectedRoutes>
+            }
+          />
+          <Route
+            path="tutorial"
+            element={
+              <TokenProtectedRoutes>
+                <LayoutWithNavbar>
+                  <Tutorial />
                 </LayoutWithNavbar>
               </TokenProtectedRoutes>
             }

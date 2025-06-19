@@ -53,7 +53,6 @@ axiosInstance.interceptors.response.use(
 
         return axiosInstance(originalRequest);
       } catch (error) {
-        console.log("Refresh token is invalid or expired");
         // Handle invalid refresh token (e.g., logout the user)
         const { logout } = useAuth();
         logout();

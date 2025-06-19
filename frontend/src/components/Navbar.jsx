@@ -1,10 +1,10 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { API_BASE_URL } from "../config/config";
-
+import "../css/Navbar.css";
 import {
   Bars3Icon,
   XMarkIcon,
@@ -13,11 +13,13 @@ import {
   AcademicCapIcon,
   ChartBarIcon,
   ArrowRightOnRectangleIcon,
+  BookOpenIcon,
 } from "@heroicons/react/24/outline";
 
 export default function Navbar() {
   const { token, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [userData, setUserData] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -52,6 +54,19 @@ export default function Navbar() {
     setIsProfileMenuOpen(!isProfileMenuOpen);
   };
 
+  // Check if current route matches the link
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
+
+  // Active style for desktop navigation
+  const activeDesktopStyle = "bg-indigo-800";
+  const inactiveDesktopStyle = "hover:bg-indigo-700";
+
+  // Active style for mobile navigation
+  const activeMobileStyle = "bg-indigo-800";
+  const inactiveMobileStyle = "hover:bg-indigo-700";
+
   return (
     <nav className="bg-black text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -68,7 +83,11 @@ export default function Navbar() {
             <div className="hidden md:ml-10 md:flex md:space-x-4">
               <Link
                 to="/previous-exams"
-                className="px-4 py-2 rounded-md text-white font-medium hover:bg-indigo-700 transition-colors duration-200 flex items-center"
+                className={`px-4 py-2 rounded-md text-white font-medium transition-colors duration-200 flex items-center ${
+                  isActive("/previous-exams")
+                    ? activeDesktopStyle
+                    : inactiveDesktopStyle
+                }`}
               >
                 <AcademicCapIcon className="h-5 w-5 mr-1" />
                 Previous Exams
@@ -76,10 +95,28 @@ export default function Navbar() {
 
               <Link
                 to="/exam-statistics"
-                className="px-4 py-2 rounded-md text-white font-medium hover:bg-indigo-700 transition-colors duration-200 flex items-center"
+                className={`px-4 py-2 rounded-md text-white font-medium transition-colors duration-200 flex items-center ${
+                  isActive("/exam-statistics")
+                    ? activeDesktopStyle
+                    : inactiveDesktopStyle
+                }`}
               >
                 <ChartBarIcon className="h-5 w-5 mr-1" />
                 Statistics
+              </Link>
+
+              {/* Tutorial Link with Highlight Animation */}
+              <Link
+                to="/tutorial"
+                className="relative flex items-center text-white px-3 py-2 rounded-md text-base font-medium transition-all duration-300 group animate-colorBlink"
+              >
+                <BookOpenIcon className="h-5 w-5 mr-1" />
+                <span className="relative">
+                  Tutorial
+                  {!isActive("/tutorial") && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+                  )}
+                </span>
               </Link>
             </div>
           </div>
@@ -120,7 +157,9 @@ export default function Navbar() {
                 <Link
                   to="/profile"
                   onClick={() => setIsProfileMenuOpen(false)}
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className={`block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 ${
+                    isActive("/profile") ? "bg-gray-100" : ""
+                  }`}
                 >
                   Profile
                 </Link>
@@ -167,7 +206,11 @@ export default function Navbar() {
           <Link
             to="/previous-exams"
             onClick={toggleMobileMenu}
-            className="flex items-center text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-700 transition-all duration-200"
+            className={`flex items-center text-white block px-3 py-2 rounded-md text-base font-medium transition-all duration-200 ${
+              isActive("/previous-exams")
+                ? activeMobileStyle
+                : inactiveMobileStyle
+            }`}
           >
             <AcademicCapIcon className="h-5 w-5 mr-2" />
             Previous Exams
@@ -176,10 +219,29 @@ export default function Navbar() {
           <Link
             to="/exam-statistics"
             onClick={toggleMobileMenu}
-            className="flex items-center text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-700 transition-all duration-200"
+            className={`flex items-center text-white block px-3 py-2 rounded-md text-base font-medium transition-all duration-200 ${
+              isActive("/exam-statistics")
+                ? activeMobileStyle
+                : inactiveMobileStyle
+            }`}
           >
             <ChartBarIcon className="h-5 w-5 mr-2" />
             Statistics
+          </Link>
+
+          {/* Mobile Tutorial Link with Highlight Animation */}
+          <Link
+            to="/tutorial"
+            onClick={toggleMobileMenu}
+            className="relative flex items-center text-white px-3 py-2 rounded-md text-base font-medium transition-all duration-300 group animate-colorBlink"
+          >
+            <BookOpenIcon className="h-5 w-5 mr-2 transform group-hover:scale-110 transition-transform duration-200" />
+            <span className="relative">
+              Tutorial
+              {!isActive("/tutorial") && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+              )}
+            </span>
           </Link>
         </div>
 
@@ -206,7 +268,9 @@ export default function Navbar() {
             <Link
               to="/profile"
               onClick={toggleMobileMenu}
-              className="flex items-center text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-700 transition-all duration-200"
+              className={`flex items-center text-white block px-3 py-2 rounded-md text-base font-medium transition-all duration-200 ${
+                isActive("/profile") ? activeMobileStyle : inactiveMobileStyle
+              }`}
             >
               <UserCircleIcon className="h-5 w-5 mr-2" />
               Profile
